@@ -1,0 +1,7 @@
+
+#export GCP_PROFILE="default"
+#export GCP_PROJECT="your-project-id"
+
+export GOOGLE_API_KEY="dummy"
+export GEMINI_INFERENCE_MODEL="gemini-pro"
+

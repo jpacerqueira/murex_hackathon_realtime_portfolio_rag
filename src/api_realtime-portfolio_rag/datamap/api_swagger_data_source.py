@@ -1,0 +1,190 @@
+import requests
+import json
+from typing import List, Dict, Any, Optional, Pattern
+import logging
+from functools import lru_cache
+from datetime import datetime
+from dotenv import load_dotenv
+import re
+
+# Load environment variables
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+class APISwaggerDataSource:
+    def __init__(self, api_base_url: str = "", swagger_url: str = "", cache_size: int = 128):
+        """Initialize API/Swagger data source handler.
+        
+        Args:
+            api_base_url (str): Base URL for the API
+            swagger_url (str): URL to Swagger/OpenAPI specification
+            cache_size (int): Maximum number of endpoints to cache in memory
+        """
+        self.api_base_url = api_base_url
+        self.swagger_url = swagger_url
+        self._cache_size = cache_size
+        self._swagger_spec = None
+        
+    def _fetch_swagger_spec(self) -> Dict[str, Any]:
+        """Fetch and parse Swagger/OpenAPI specification."""
+        if self._swagger_spec is not None:
+            return self._swagger_spec
+        
+        try:
+            if not self.swagger_url:
+                raise ValueError("Swagger URL not provided")
+            
+            response = requests.get(self.swagger_url, timeout=30)
+            response.raise_for_status()
+            self._swagger_spec = response.json()
+            return self._swagger_spec
+        except Exception as e:
+            logger.error(f"Error fetching Swagger spec: {str(e)}")
+            raise
+    
+    @lru_cache(maxsize=128)
+    def list_endpoints(self, pattern: Optional[str] = None) -> List[str]:
+        """List all endpoints in the API specification.
+        
+        Args:
+            pattern (Optional[str]): Regex pattern to filter endpoints
+            
+        Returns:
+            List[str]: List of endpoint paths
+        """
+        try:
+            spec = self._fetch_swagger_spec()
+            paths = spec.get('paths', {})
+            all_endpoints = []
+            
+            for path, methods in paths.items():
+                for method in methods.keys():
+                    if method.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
+                        endpoint_key = f"{method.upper()} {path}"
+                        all_endpoints.append(endpoint_key)
+            
+            if pattern:
+                regex = re.compile(pattern)
+                all_endpoints = [ep for ep in all_endpoints if regex.search(ep)]
+            
+            return all_endpoints
+        except Exception as e:
+            logger.error(f"Error listing endpoints: {str(e)}")
+            raise
+    
+    @lru_cache(maxsize=128)
+    def get_endpoint_spec(self, endpoint_key: str) -> Dict[str, Any]:
+        """Get specification for a specific endpoint.
+        
+        Args:
+            endpoint_key (str): Endpoint key in format "METHOD /path"
+            
+        Returns:
+            Dict[str, Any]: Endpoint specification
+        """
+        try:
+            spec = self._fetch_swagger_spec()
+            paths = spec.get('paths', {})
+            
+            method, path = endpoint_key.split(' ', 1)
+            method = method.lower()
+            
+            if path not in paths or method not in paths[path]:
+                raise ValueError(f"Endpoint {endpoint_key} not found")
+            
+            endpoint_info = paths[path][method]
+            
+            # Extract parameters
+            parameters = []
+            for param in endpoint_info.get('parameters', []):
+                param_info = {
+                    'name': param.get('name', ''),
+                    'in': param.get('in', ''),
+                    'required': param.get('required', False),
+                    'type': param.get('schema', {}).get('type', 'string'),
+                    'description': param.get('description', '')
+                }
+                parameters.append(param_info)
+            
+            # Extract request body
+            request_body = None
+            if 'requestBody' in endpoint_info:
+                content = endpoint_info['requestBody'].get('content', {})
+                if content:
+                    # Get first content type
+                    content_type = list(content.keys())[0]
+                    schema = content[content_type].get('schema', {})
+                    request_body = json.dumps(schema, indent=2)
+            
+            # Extract responses
+            responses = {}
+            for status_code, response_info in endpoint_info.get('responses', {}).items():
+                response_data = {
+                    'description': response_info.get('description', ''),
+                    'schema': None
+                }
+                if 'content' in response_info:
+                    content = response_info['content']
+                    if content:
+                        content_type = list(content.keys())[0]
+                        schema = content[content_type].get('schema', {})
+                        response_data['schema'] = schema
+                responses[status_code] = response_data
+            
+            return {
+                "endpoint_path": path,
+                "method": method.upper(),
+                "description": endpoint_info.get('description', endpoint_info.get('summary', '')),
+                "tags": endpoint_info.get('tags', []),
+                "parameters": parameters,
+                "request_body": request_body,
+                "responses": responses,
+                "operation_id": endpoint_info.get('operationId', '')
+            }
+        except Exception as e:
+            logger.error(f"Error getting endpoint spec for {endpoint_key}: {str(e)}")
+            raise
+    
+    def get_all_endpoints(self, pattern: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get specification information for all endpoints.
+        
+        Args:
+            pattern (Optional[str]): Regex pattern to filter endpoints
+            
+        Returns:
+            List[Dict[str, Any]]: List of endpoint specifications
+        """
+        try:
+            endpoint_keys = self.list_endpoints(pattern)
+            return [self.get_endpoint_spec(key) for key in endpoint_keys]
+        except Exception as e:
+            logger.error(f"Error getting all endpoints: {str(e)}")
+            raise
+    
+    def get_parameter_info(self, endpoint_key: str, parameter_name: str) -> Dict[str, Any]:
+        """Get detailed information about a specific parameter.
+        
+        Args:
+            endpoint_key (str): Endpoint key in format "METHOD /path"
+            parameter_name (str): Name of the parameter to analyze
+            
+        Returns:
+            Dict[str, Any]: Parameter information
+        """
+        try:
+            endpoint_spec = self.get_endpoint_spec(endpoint_key)
+            for param in endpoint_spec.get('parameters', []):
+                if param['name'] == parameter_name:
+                    return param
+            raise ValueError(f"Parameter {parameter_name} not found in endpoint {endpoint_key}")
+        except Exception as e:
+            logger.error(f"Error getting parameter info for {parameter_name} in {endpoint_key}: {str(e)}")
+            raise
+    
+    def clear_cache(self) -> None:
+        """Clear the LRU cache for both endpoint listing and specification retrieval."""
+        self.list_endpoints.cache_clear()
+        self.get_endpoint_spec.cache_clear()
+        self._swagger_spec = None
+

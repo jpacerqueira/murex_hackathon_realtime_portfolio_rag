@@ -1,0 +1,8 @@
+{
+    "api_base_url": "https://api.example.com",
+    "swagger_url": "https://api.example.com/swagger.json",
+    "region_name": "us-central1",
+    "cache_size": 128,
+    "pattern": ""
+}
+
