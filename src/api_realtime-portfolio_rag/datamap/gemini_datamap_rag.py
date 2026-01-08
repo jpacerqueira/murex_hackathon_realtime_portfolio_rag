@@ -11,7 +11,7 @@ import logging
 try:
     from .api_swagger_data_source import APISwaggerDataSource
 except ImportError:
-    from api_swagger_data_source import APISwaggerDataSource
+    from datamap.api_swagger_data_source import APISwaggerDataSource
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

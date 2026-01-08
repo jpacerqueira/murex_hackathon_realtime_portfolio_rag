@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Tuple, Optional
 try:
     from .gemini_datamap_rag import GeminiDatamapRAG
 except ImportError:
-    from gemini_datamap_rag import GeminiDatamapRAG
+    from datamap.gemini_datamap_rag import GeminiDatamapRAG
 import streamlit as st
 import pandas as pd
 import os

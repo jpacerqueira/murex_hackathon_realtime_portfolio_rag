@@ -7,7 +7,7 @@ from pathlib import Path
 try:
     from .gemini_datamap_rag import GeminiDatamapRAG
 except ImportError:
-    from gemini_datamap_rag import GeminiDatamapRAG
+    from datamap.gemini_datamap_rag import GeminiDatamapRAG
 from dotenv import load_dotenv
 import logging
 import numpy as np
