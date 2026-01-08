@@ -2,6 +2,8 @@
 
 This application provides a RAG-based API specification and analysis system for Swagger/OpenAPI files using GCP Gemini and FAISS.
 
+![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img1.png)
+
 ## Prerequisites
 
 - Docker installed on your system
