@@ -3,8 +3,16 @@ from typing import List, Dict, Any, Tuple, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
+try:
+    from langchain.chains import RetrievalQA
+    from langchain.prompts import PromptTemplate
+except ImportError:
+    try:
+        from langchain_classic.chains import RetrievalQA
+        from langchain_classic.prompts import PromptTemplate
+    except ImportError:
+        from langchain_community.chains import RetrievalQA
+        from langchain_core.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
 import logging
