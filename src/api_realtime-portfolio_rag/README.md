@@ -101,6 +101,11 @@ The following environment variables can be set when running the container:
 - `GEMINI_INFERENCE_MODEL`: Gemini model to use (default: gemini-pro)
 - `GCP_REGION`: GCP region (default: us-central1)
 
+1. Quick Run Free-Tier GCP
+```bash
+export GOOGLE_API_KEY="AIzaSyByFIPP4JaoiDPxM54P7G51UcSD2mZgwDo"  ; make build ; make run
+```
+
 ## Project Structure
 
 - `gemini_datamap_rag.py`: Core RAG implementation
