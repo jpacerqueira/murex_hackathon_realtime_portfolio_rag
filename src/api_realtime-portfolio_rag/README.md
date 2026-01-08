@@ -103,7 +103,7 @@ The following environment variables can be set when running the container:
 
 1. Quick Run Free-Tier GCP
 ```bash
-export GOOGLE_API_KEY="AIzaSyByFIPP4JaoiDPxM54P7G51UcSD2mZgwDo"  ; make build ; make run
+export GOOGLE_API_KEY="AIzaSyByFIPP4JaoiDPxM54P7G51UcSD2mZgwDo"  ; make build ; make run_all 
 ```
 
 ## Project Structure
