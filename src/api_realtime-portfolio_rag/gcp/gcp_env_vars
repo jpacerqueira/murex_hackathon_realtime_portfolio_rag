@@ -2,7 +2,8 @@
 #export GCP_PROFILE="default"
 #export GCP_PROJECT="your-project-id"
 
-export GOOGLE_API_KEY="AIzaSyByFIPP4JaoiDPxM54P7G51UcSD2mZgwDo"
+#  GENERATE KEY on GOOGLE PROJECT - under - https://aistudio.google.com/app/projects
+export GOOGLE_API_KEY="<<GCP_PROJECT_API_KEY>>"
 
 export GEMINI_INFERENCE_MODEL="gemini-pro"
 
