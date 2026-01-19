@@ -40,7 +40,7 @@ build:
 	docker build -t $(DOCKER_IMAGE_API):$(DOCKER_TAG) -f $(DOCKER_FILE_API) .
 
 # Load GCP credentials from file
-GOOGLE_API_KEY := $(shell grep GOOGLE_API_KEY $(GCP_ENV_FILE) | cut -d'"' -f2)
+GEMINI_API_KEY := $(shell grep GEMINI_API_KEY $(GCP_ENV_FILE) | cut -d'"' -f2)
 
 run_all:
 	@echo "Running all Docker containers..."
@@ -48,8 +48,8 @@ run_all:
 		echo "Error: $(GCP_ENV_FILE) not found"; \
 		exit 1; \
 	fi
-	@if [ -z "$(GOOGLE_API_KEY)" ]; then \
-		echo "Error: GCP API key not found in $(GCP_ENV_FILE)"; \
+	@if [ -z "$(GEMINI_API_KEY)" ]; then \
+		echo "Error: Gemini API key not found in $(GCP_ENV_FILE)"; \
 		exit 1; \
 	fi
 	docker compose -f docker-compose.yml down 2>/dev/null || true
@@ -62,8 +62,8 @@ run_streamlit:
 		echo "Error: $(GCP_ENV_FILE) not found"; \
 		exit 1; \
 	fi
-	@if [ -z "$(GOOGLE_API_KEY)" ]; then \
-		echo "Error: GCP API key not found in $(GCP_ENV_FILE)"; \
+	@if [ -z "$(GEMINI_API_KEY)" ]; then \
+		echo "Error: Gemini API key not found in $(GCP_ENV_FILE)"; \
 		exit 1; \
 	fi
 	docker compose -f docker-compose-rag.yml down 2>/dev/null || true
@@ -76,8 +76,8 @@ run_api:
 		echo "Error: $(GCP_ENV_FILE) not found"; \
 		exit 1; \
 	fi
-	@if [ -z "$(GOOGLE_API_KEY)" ]; then \
-		echo "Error: GCP API key not found in $(GCP_ENV_FILE)"; \
+	@if [ -z "$(GEMINI_API_KEY)" ]; then \
+		echo "Error: Gemini API key not found in $(GCP_ENV_FILE)"; \
 		exit 1; \
 	fi
 	docker compose -f docker-compose-api.yml down 2>/dev/null || true

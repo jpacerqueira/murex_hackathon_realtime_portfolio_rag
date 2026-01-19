@@ -1,5 +1,5 @@
 {
-    "modelId": "gemini-pro",
+    "modelId": "gemini-2.0-flash",
     "contentType": "application/json",
     "accept": "application/json",
     "body": {

@@ -7,14 +7,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-pro}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-2.0-flash}
       - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
     volumes:
       - ./config:/app/config
     networks:
       - gemini-datamap-rag
-    restart: unless-stopped
+    restart: "on-failure:${RESTART_RETRIES:-300}"
 
 
 networks:

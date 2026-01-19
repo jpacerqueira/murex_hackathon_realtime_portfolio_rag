@@ -52,29 +52,29 @@ class GeminiDatamapRAG:
         try:
             # Configure GCP credentials
             if gcp_credentials:
-                # Use provided credentials
-                google_api_key = gcp_credentials.get('GOOGLE_API_KEY')
+                # Use provided credentials (prefer GEMINI_API_KEY)
+                gemini_api_key = gcp_credentials.get('GEMINI_API_KEY') or gcp_credentials.get('GOOGLE_API_KEY')
                 logger.info("Using provided GCP credentials")
             else:
-                # Try to get credentials from environment variables
-                google_api_key = os.getenv('GOOGLE_API_KEY')
+                # Try to get credentials from environment variables (prefer GEMINI_API_KEY)
+                gemini_api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
                 logger.info("Using GCP credentials from environment variables")
             
-            if not google_api_key:
-                raise ValueError("GCP API key not found. Please provide credentials through environment variables or the gcp_credentials parameter.")
+            if not gemini_api_key:
+                raise ValueError("Gemini API key not found. Please provide GEMINI_API_KEY through environment variables or the gcp_credentials parameter.")
             
             # Initialize Gemini embeddings
             self.embeddings = GoogleGenerativeAIEmbeddings(
                 model="models/embedding-001",
-                google_api_key=google_api_key
+                google_api_key=gemini_api_key
             )
             
             # Get inference model from environment or use default
-            inference_model = os.getenv('GEMINI_INFERENCE_MODEL', 'gemini-pro')
+            inference_model = os.getenv('GEMINI_INFERENCE_MODEL', 'gemini-2.0-flash')
             
             self.llm = ChatGoogleGenerativeAI(
                 model=inference_model,
-                google_api_key=google_api_key,
+                google_api_key=gemini_api_key,
                 temperature=0.0,
                 max_tokens=10000,
                 top_p=0.2,

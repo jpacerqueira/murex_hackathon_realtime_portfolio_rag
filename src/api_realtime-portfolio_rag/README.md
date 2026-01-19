@@ -29,8 +29,8 @@ make build
 
 3. Run the containers (requires GCP API key) , either or both :
 ```bash
-export GOOGLE_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-pro
+export GEMINI_API_KEY=your_api_key
+export GEMINI_INFERENCE_MODEL=gemini-2.0-flash
 make run_all
 OR 
 make run_api ; make run_streamlit
@@ -99,13 +99,13 @@ streamlit run datamap/realtime_portfolio_schema_analyzer.py
 
 The following environment variables can be set when running the container:
 
-- `GOOGLE_API_KEY`: Your GCP API key for Gemini
-- `GEMINI_INFERENCE_MODEL`: Gemini model to use (default: gemini-pro)
+- `GEMINI_API_KEY`: Your Gemini API key
+- `GEMINI_INFERENCE_MODEL`: Gemini model to use (default: gemini-2.0-flash)
 - `GCP_REGION`: GCP region (default: us-central1)
 
 1. Quick Run Free-Tier GCP
 ```bash
-export GOOGLE_API_KEY="<<GCP_PROJECT_API_KEY>>"  ; make build ; make run_all 
+export GEMINI_API_KEY="<<GEMINI_API_KEY>>"  ; make build ; make run_all 
 ```
 
 ## Project Structure

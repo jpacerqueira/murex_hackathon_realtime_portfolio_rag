@@ -10,20 +10,20 @@ if [ -f "/app/gcp_env_vars" ]; then
 fi
 
 # If credentials are not set, try to get them from environment
-if [ -z "$GOOGLE_API_KEY" ]; then
-    echo "GCP API key not found in environment"
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo "Gemini API key not found in environment"
     exit 1
 fi
 
 # Verify credentials are set
-if [ -z "$GOOGLE_API_KEY" ]; then
-    echo "Error: GCP API key is not properly set"
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo "Error: Gemini API key is not properly set"
     exit 1
 fi
 
 # Print the credentials (for debugging - be careful in production)
 echo "Using GCP credentials:"
-echo "GOOGLE_API_KEY: ${GOOGLE_API_KEY:0:10}..." # Only show first 10 chars
+echo "GEMINI_API_KEY: ${GEMINI_API_KEY:0:10}..." # Only show first 10 chars
 
 # Set PYTHONPATH
 export PYTHONPATH=/app:$PYTHONPATH

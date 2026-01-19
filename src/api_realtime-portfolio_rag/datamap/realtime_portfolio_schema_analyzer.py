@@ -23,7 +23,7 @@ class DataMapAPIAnalyzer:
         """
         # Get GCP credentials from environment variables
         gcp_credentials = {
-            'GOOGLE_API_KEY': os.getenv('GOOGLE_API_KEY')
+            'GEMINI_API_KEY': os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
         }
         
         self.rag = GeminiDatamapRAG(
@@ -96,8 +96,8 @@ def create_streamlit_app():
         st.session_state.analyzer = None
     
     # Check if GCP credentials are available
-    if not os.getenv('GOOGLE_API_KEY'):
-        st.error("GCP API key not found in environment variables. Please set GOOGLE_API_KEY.")
+    if not (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')):
+        st.error("Gemini API key not found in environment variables. Please set GEMINI_API_KEY.")
         return
     
     # API configuration

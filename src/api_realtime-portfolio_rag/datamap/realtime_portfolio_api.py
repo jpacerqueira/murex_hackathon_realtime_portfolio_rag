@@ -56,17 +56,17 @@ class DataMapAPIAnalyzer:
         self.config = self._load_config()
         
         # Validate GCP credentials
-        google_api_key = os.getenv('GOOGLE_API_KEY')
+        gemini_api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
         
-        if not google_api_key:
+        if not gemini_api_key:
             raise HTTPException(
                 status_code=500,
-                detail="GCP API key not found in environment variables. Please set GOOGLE_API_KEY."
+                detail="Gemini API key not found in environment variables. Please set GEMINI_API_KEY."
             )
         
         # Get GCP credentials from environment variables
         gcp_credentials = {
-            'GOOGLE_API_KEY': google_api_key
+            'GEMINI_API_KEY': gemini_api_key
         }
         
         # Get API configuration with defaults
