@@ -1,5 +1,5 @@
 {
-    "modelId": "gemini-2.0-flash",
+    "modelId": "gemini-3-flash-preview",
     "contentType": "application/json",
     "accept": "application/json",
     "body": {

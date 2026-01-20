@@ -70,7 +70,7 @@ class GeminiDatamapRAG:
             )
             
             # Get inference model from environment or use default
-            inference_model = os.getenv('GEMINI_INFERENCE_MODEL', 'gemini-2.0-flash')
+            inference_model = os.getenv('GEMINI_INFERENCE_MODEL', 'gemini-3-flash-preview')
             
             self.llm = ChatGoogleGenerativeAI(
                 model=inference_model,

@@ -96,7 +96,7 @@ http://localhost:8000/redoc
 ### Environment Variables
 ```bash
 export GEMINI_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-2.0-flash
+export GEMINI_INFERENCE_MODEL=gemini-3-flash-preview
 export DATAMAP_CONFIG_PATH=config/datamap_config.json
 ```
 
@@ -124,7 +124,7 @@ docker build -t realtime-portfolio-api .
 ```bash
 docker run -p 8000:8000 \
   -e GEMINI_API_KEY=your_api_key \
-  -e GEMINI_INFERENCE_MODEL=gemini-2.0-flash \
+  -e GEMINI_INFERENCE_MODEL=gemini-3-flash-preview \
   realtime-portfolio-api
 ```
 

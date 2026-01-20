@@ -8,7 +8,7 @@ services:
       - "8000:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-2.0-flash}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
       - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
     volumes:
       - ./config:/app/config
@@ -25,7 +25,7 @@ services:
       - "8501:8501"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-2.0-flash}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
     volumes:
       - ./config:/app/config
     networks:

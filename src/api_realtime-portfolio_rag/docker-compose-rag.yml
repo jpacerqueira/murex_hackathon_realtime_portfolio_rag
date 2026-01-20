@@ -9,7 +9,7 @@ services:
       - "8501:8501"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-2.0-flash}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
     volumes:
       - ./config:/app/config
     networks:
