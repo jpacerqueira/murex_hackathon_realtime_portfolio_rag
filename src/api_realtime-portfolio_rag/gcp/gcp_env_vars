@@ -1,6 +1,5 @@
 
 #export GCP_PROFILE="default"
-#export GCP_PROJECT="your-project-id"
 
 #  GENERATE KEY on GOOGLE PROJECT - under - https://aistudio.google.com/app/projects
 
