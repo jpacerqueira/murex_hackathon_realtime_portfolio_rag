@@ -52,6 +52,10 @@ run_all:
 		echo "Error: Gemini API key not found in $(GCP_ENV_FILE)"; \
 		exit 1; \
 	fi
+	echo "GEMINI_API_KEY: $(GEMINI_API_KEY)"
+	echo "GEMINI_INFERENCE_MODEL: $(GEMINI_INFERENCE_MODEL)"
+	echo "GEMINI_EMBEDDING_MODEL: $(GEMINI_EMBEDDING_MODEL)"
+	echo "GCP_PROJECT: $(GCP_PROJECT)"
 	docker compose -f docker-compose.yml down 2>/dev/null || true
 	docker compose -f docker-compose.yml up --build || true
 	@echo "All Docker containers have been started successfully."
