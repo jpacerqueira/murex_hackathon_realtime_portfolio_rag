@@ -7,6 +7,8 @@ import streamlit as st
 import pandas as pd
 import os
 from dotenv import load_dotenv
+import warnings
+from urllib.parse import urlparse
 
 # Load environment variables
 load_dotenv()
@@ -33,14 +35,19 @@ class DataMapAPIAnalyzer:
             gcp_credentials=gcp_credentials,
             cache_size=cache_size
         )
+        self.rag_ready = False
         self._initialize_rag()
     
-    def _initialize_rag(self, pattern: Optional[str] = None):
+    def _initialize_rag(self, pattern: Optional[str] = None) -> bool:
         """Initialize the RAG system with the API specifications."""
-        self.rag.build_rag_index(pattern)
+        built = self.rag.build_rag_index(pattern)
+        self.rag_ready = bool(built)
+        return self.rag_ready
     
     def analyze_api(self, query: str, context: str = "api", format_type: str = "json") -> Dict[str, Any]:
         """Analyze the API specification based on a natural language query."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         analysis = self.rag.get_detailed_api_analysis(query, context, format_type)
         st.write(f"Analysis: {analysis}")
         return {
@@ -50,22 +57,32 @@ class DataMapAPIAnalyzer:
     
     def get_detailed_api_call_in_context(self, query: str, context: str = "api and endpoints", format_type: str = "json") -> Dict[str, Any]:
         """Get detailed API call in context."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         return self.rag.get_detailed_api_call_in_context(query, context, format_type)
     
     def get_similar_api(self, query: str, k: int = 3) -> Tuple[List[str], List[float]]:
         """Get similar API endpoints with similarity scores."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         return self.rag.query_api(query, k)
     
     def get_endpoint_spec(self, endpoint_path: str) -> Dict[str, Any]:
         """Get detailed specification information about a specific endpoint."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         return self.rag.get_endpoint_spec(endpoint_path)
     
     def get_parameter_info(self, endpoint_path: str, parameter_name: str) -> Dict[str, Any]:
         """Get detailed information about a specific parameter."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         return self.rag.get_parameter_info(endpoint_path, parameter_name)
     
     def get_api_summary(self) -> Dict[str, Any]:
         """Get a summary of the entire API specification."""
+        if not self.rag_ready:
+            raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
         all_endpoints = self.rag.api_cache
         summary = {
             "total_endpoints": len(all_endpoints),
@@ -89,6 +106,13 @@ class DataMapAPIAnalyzer:
 
 def create_streamlit_app():
     """Create a Streamlit app for interacting with the API analyzer."""
+    def _is_valid_url(url: str) -> bool:
+        try:
+            parsed = urlparse(url)
+            return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+        except Exception:
+            return False
+
     st.title("Realtime Portfolio API Analyzer")
     
     # Initialize session state
@@ -119,18 +143,42 @@ def create_streamlit_app():
     if st.button("Initialize Analyzer"):
         try:
             with st.spinner("Initializing API analyzer..."):
+                swagger_url_clean = (swagger_url or "").strip()
+                swagger_valid = _is_valid_url(swagger_url_clean)
+                api_url_clean = (api_base_url or "").strip()
+                api_url_valid = _is_valid_url(api_url_clean)
+                if not swagger_url_clean or not swagger_valid:
+                    if api_url_valid:
+                        warning_msg = (
+                            "Swagger URL is optional. Initializing embeddings from the API Base URL only "
+                            "because the Swagger URL is empty or invalid."
+                        )
+                    else:
+                        warning_msg = (
+                            "Swagger URL is optional. Initializing without learning embeddings because both "
+                            "Swagger URL and API Base URL are empty or invalid."
+                        )
+                    st.warning(warning_msg)
+                    warnings.warn(warning_msg)
+
                 st.session_state.analyzer = DataMapAPIAnalyzer(
                     api_base_url=api_base_url,
                     swagger_url=swagger_url,
                     region_name=region_name,
                     cache_size=cache_size
                 )
-                st.session_state.analyzer._initialize_rag(pattern if pattern else None)
-                st.success("Analyzer initialized successfully!")
+                built = st.session_state.analyzer._initialize_rag(pattern if pattern else None)
+                if built:
+                    st.success("Analyzer initialized successfully!")
+                else:
+                    st.warning(
+                        "Analyzer initialized, but no Swagger endpoints were learned. "
+                        "Check the Swagger URL if you expect embeddings."
+                    )
         except Exception as e:
             st.error(f"Error initializing analyzer: {str(e)}")
     
-    if st.session_state.analyzer:
+    if st.session_state.analyzer and st.session_state.analyzer.rag_ready:
         # Query input
         query = st.text_input("Enter your query about the API specification:")
         
@@ -205,6 +253,8 @@ def create_streamlit_app():
             except Exception as e:
                 st.error(f"Error processing query: {str(e)}")
                 st.error("Please try again with a different query or check the logs for more details.")
+    elif st.session_state.analyzer and not st.session_state.analyzer.rag_ready:
+        st.warning("RAG index not built yet. Initialize with a valid Swagger URL to enable queries.")
 
 if __name__ == "__main__":
     create_streamlit_app()

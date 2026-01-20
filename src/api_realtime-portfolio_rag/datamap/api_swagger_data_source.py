@@ -6,6 +6,7 @@ from functools import lru_cache
 from datetime import datetime
 from dotenv import load_dotenv
 import re
+from urllib.parse import urlparse
 
 # Load environment variables
 load_dotenv()
@@ -32,16 +33,65 @@ class APISwaggerDataSource:
             return self._swagger_spec
         
         try:
-            if not self.swagger_url:
-                raise ValueError("Swagger URL not provided")
-            
-            response = requests.get(self.swagger_url, timeout=30)
+            swagger_url = (self.swagger_url or "").strip()
+            if not swagger_url:
+                logger.warning("Swagger URL is empty; skipping Swagger fetch")
+                self._swagger_spec = {}
+                return self._swagger_spec
+
+            if not self._is_valid_url(swagger_url):
+                logger.warning("Swagger URL is invalid; skipping Swagger fetch")
+                self._swagger_spec = {}
+                return self._swagger_spec
+
+            response = requests.get(swagger_url, timeout=30)
             response.raise_for_status()
             self._swagger_spec = response.json()
             return self._swagger_spec
         except Exception as e:
-            logger.error(f"Error fetching Swagger spec: {str(e)}")
-            raise
+            logger.warning(f"Swagger fetch failed; skipping Swagger spec: {str(e)}")
+            self._swagger_spec = {}
+            return self._swagger_spec
+
+    def _is_valid_url(self, url: str) -> bool:
+        """Validate Swagger URL format."""
+        try:
+            parsed = urlparse(url)
+            return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+        except Exception:
+            return False
+
+    def _fetch_base_url_sample(self) -> Optional[Dict[str, Any]]:
+        """Fetch a sample response from the API base URL."""
+        api_url = (self.api_base_url or "").strip()
+        if not api_url or not self._is_valid_url(api_url):
+            return None
+
+        try:
+            response = requests.get(api_url, timeout=30)
+            response.raise_for_status()
+            content_type = response.headers.get("Content-Type", "")
+
+            content: Any
+            if "application/json" in content_type:
+                try:
+                    content = response.json()
+                except ValueError:
+                    content = response.text
+            else:
+                content = response.text
+
+            if isinstance(content, str):
+                content = content[:2000]
+
+            return {
+                "status_code": response.status_code,
+                "content_type": content_type,
+                "content": content,
+            }
+        except Exception as e:
+            logger.warning(f"Error fetching base URL sample: {str(e)}")
+            return None
     
     @lru_cache(maxsize=128)
     def list_endpoints(self, pattern: Optional[str] = None) -> List[str]:
@@ -157,7 +207,41 @@ class APISwaggerDataSource:
         """
         try:
             endpoint_keys = self.list_endpoints(pattern)
-            return [self.get_endpoint_spec(key) for key in endpoint_keys]
+            if endpoint_keys:
+                return [self.get_endpoint_spec(key) for key in endpoint_keys]
+
+            api_url = (self.api_base_url or "").strip()
+            if not api_url or not self._is_valid_url(api_url):
+                return []
+
+            sample = self._fetch_base_url_sample()
+            response_schema = None
+            response_description = "Base URL provided without Swagger. Limited endpoint details."
+            if sample:
+                response_description += f" Status: {sample.get('status_code')}. Content-Type: {sample.get('content_type')}"
+                content = sample.get("content")
+                if isinstance(content, (dict, list)):
+                    response_schema = content
+                elif content:
+                    response_schema = {"sample": content}
+
+            return [
+                {
+                    "endpoint_path": api_url,
+                    "method": "GET",
+                    "description": "API base URL provided without Swagger. Limited endpoint details.",
+                    "tags": ["base-url"],
+                    "parameters": [],
+                    "request_body": None,
+                    "responses": {
+                        "200": {
+                            "description": response_description,
+                            "schema": response_schema,
+                        }
+                    },
+                    "operation_id": "GET_BASE_URL",
+                }
+            ]
         except Exception as e:
             logger.error(f"Error getting all endpoints: {str(e)}")
             raise

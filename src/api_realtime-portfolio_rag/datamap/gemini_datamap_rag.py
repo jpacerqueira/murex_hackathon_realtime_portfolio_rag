@@ -138,25 +138,32 @@ class GeminiDatamapRAG:
             # Get API specifications
             api_specs = self.api_data_source.get_all_endpoints(pattern)
             if not api_specs:
-                raise ValueError("No API endpoints found in the specified location")
-            
+                logger.warning("No API endpoints found; skipping RAG index build")
+                self.api_cache = {}
+                self.vector_store = None
+                return False
+
             self.api_cache = {item['endpoint_path']: item for item in api_specs}
-            
+
             # Convert API specs to text
             api_text = self._prepare_api_text(api_specs)
             if not api_text.strip():
-                raise ValueError("Generated API text is empty")
-            
+                logger.warning("Generated API text is empty; skipping RAG index build")
+                self.vector_store = None
+                return False
+
             # Split text into chunks
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=30000,
                 chunk_overlap=1500
             )
             texts = text_splitter.split_text(api_text)
-            
+
             if not texts:
-                raise ValueError("No text chunks generated from API specifications")
-            
+                logger.warning("No text chunks generated; skipping RAG index build")
+                self.vector_store = None
+                return False
+
             # Create FAISS index
             try:
                 self.vector_store = FAISS.from_texts(
@@ -164,10 +171,11 @@ class GeminiDatamapRAG:
                     embedding=self.embeddings
                 )
                 logger.info(f"Successfully built RAG index with {len(texts)} text chunks")
+                return True
             except Exception as e:
                 logger.error(f"Error creating FAISS index: {str(e)}")
                 raise ValueError(f"Failed to create vector store: {str(e)}")
-            
+
         except Exception as e:
             logger.error(f"Error building RAG index: {str(e)}")
             raise ValueError(f"Error building RAG index: {str(e)}")

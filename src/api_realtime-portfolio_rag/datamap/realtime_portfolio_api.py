@@ -126,14 +126,14 @@ class DataMapAPIAnalyzer:
     def _initialize_rag(self):
         """Initialize the RAG system with the API specifications."""
         try:
-            if 'swagger_url' not in self.config:
-                raise HTTPException(status_code=400, detail="Swagger URL not found in configuration")
-            
             pattern = self.config.get('pattern')
             logger.info(f"Building RAG index with endpoints in pattern: {pattern}")
             
-            self.rag.build_rag_index(pattern=pattern)
-            logger.info("RAG index built successfully")
+            built = self.rag.build_rag_index(pattern=pattern)
+            if built:
+                logger.info("RAG index built successfully")
+            else:
+                logger.warning("RAG index not built; Swagger URL may be empty or invalid")
         except Exception as e:
             logger.error(f"Error initializing RAG: {str(e)}")
             raise HTTPException(
