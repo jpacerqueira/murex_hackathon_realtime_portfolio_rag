@@ -64,8 +64,9 @@ class GeminiDatamapRAG:
                 raise ValueError("Gemini API key not found. Please provide GEMINI_API_KEY through environment variables or the gcp_credentials parameter.")
             
             # Initialize Gemini embeddings
+            embedding_model = os.getenv('GEMINI_EMBEDDING_MODEL', 'models/gemini-embedding-001')
             self.embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/embedding-001",
+                model=embedding_model,
                 google_api_key=gemini_api_key
             )
             

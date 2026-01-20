@@ -101,6 +101,7 @@ The following environment variables can be set when running the container:
 
 - `GEMINI_API_KEY`: Your Gemini API key
 - `GEMINI_INFERENCE_MODEL`: Gemini model to use (default: gemini-3-flash-preview)
+- `GEMINI_EMBEDDING_MODEL`: Gemini embedding model (default: models/gemini-embedding-001)
 - `GCP_REGION`: GCP region (default: us-central1)
 
 1. Quick Run Free-Tier GCP

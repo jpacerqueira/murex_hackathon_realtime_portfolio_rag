@@ -97,6 +97,7 @@ http://localhost:8000/redoc
 ```bash
 export GEMINI_API_KEY=your_api_key
 export GEMINI_INFERENCE_MODEL=gemini-3-flash-preview
+export GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
 export DATAMAP_CONFIG_PATH=config/datamap_config.json
 ```
 

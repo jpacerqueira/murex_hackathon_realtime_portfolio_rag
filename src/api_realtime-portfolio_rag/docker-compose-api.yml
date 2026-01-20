@@ -9,6 +9,7 @@ services:
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
+      - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}
       - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
     volumes:
       - ./config:/app/config
