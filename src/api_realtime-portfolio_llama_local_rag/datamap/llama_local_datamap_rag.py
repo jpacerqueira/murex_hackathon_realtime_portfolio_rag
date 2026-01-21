@@ -29,6 +29,14 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+def _normalize_openai_base_url(base_url: str) -> str:
+    if not base_url:
+        return base_url
+    normalized = base_url.rstrip("/")
+    if normalized.endswith("/v1"):
+        return normalized
+    return f"{normalized}/v1"
+
 class LlamaLocalDatamapRAG:
     def __init__(
         self,
@@ -61,13 +69,14 @@ class LlamaLocalDatamapRAG:
                 logger.info("Using Llama server configuration from environment variables")
 
             if not base_url:
-                base_url = "http://host.docker.internal:11434/v1"
+                base_url = "http://host.docker.internal:11434"
                 logger.info("LLAMA_BASE_URL not set; defaulting to %s", base_url)
 
             if not api_key:
                 api_key = "local"
                 logger.info("LLAMA_API_KEY not set; using default local key")
 
+            openai_base_url = _normalize_openai_base_url(base_url)
             embeddings_provider = os.getenv("LLAMA_EMBEDDINGS_PROVIDER", "openai").lower()
             if embeddings_provider == "hf":
                 hf_model = os.getenv("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
@@ -82,7 +91,7 @@ class LlamaLocalDatamapRAG:
                 self.embeddings = OpenAIEmbeddings(
                     model=embedding_model,
                     api_key=api_key,
-                    base_url=base_url,
+                    base_url=openai_base_url,
                 )
                 logger.info("Embeddings: Using Llama server (%s)", embedding_model)
 
@@ -90,7 +99,7 @@ class LlamaLocalDatamapRAG:
             self.llm = ChatOpenAI(
                 model=inference_model,
                 api_key=api_key,
-                base_url=base_url,
+                base_url=openai_base_url,
                 temperature=0.0,
                 max_tokens=10000,
             )

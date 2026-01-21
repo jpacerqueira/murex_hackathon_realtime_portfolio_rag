@@ -95,7 +95,7 @@ http://localhost:8000/redoc
 
 ### Environment Variables
 ```bash
-export LLAMA_BASE_URL=http://localhost:11434/v1
+export LLAMA_BASE_URL=http://localhost:11434
 export LLAMA_API_KEY=local
 export LLAMA_INFERENCE_MODEL=llama3.2
 export LLAMA_EMBEDDING_MODEL=nomic-embed-text
@@ -128,7 +128,7 @@ docker build -t realtime-portfolio-api .
 2. Run the container:
 ```bash
 docker run -p 8000:8000 \
-  -e LLAMA_BASE_URL=http://host.docker.internal:11434/v1 \
+  -e LLAMA_BASE_URL=http://host.docker.internal:11434 \
   -e LLAMA_INFERENCE_MODEL=llama3.2 \
   -e LLAMA_EMBEDDING_MODEL=nomic-embed-text \
   -e LLAMA_EMBEDDINGS_PROVIDER=openai \
