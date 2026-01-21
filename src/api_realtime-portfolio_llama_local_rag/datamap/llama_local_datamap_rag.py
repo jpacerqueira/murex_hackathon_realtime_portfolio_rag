@@ -81,7 +81,7 @@ class LlamaLocalDatamapRAG:
                 logger.info("LLAMA_API_KEY not set; using default local key")
 
             openai_base_url = _normalize_openai_base_url(base_url)
-            embeddings_provider = _get_env_default("LLAMA_EMBEDDINGS_PROVIDER", "openai").lower()
+            embeddings_provider = _get_env_default("LLAMA_EMBEDDINGS_PROVIDER", "ollama").lower()
             if embeddings_provider == "hf":
                 hf_model = _get_env_default("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
                 hf_cache = _get_env_default("HF_EMBEDDING_CACHE_DIR", "/embedding_model")
