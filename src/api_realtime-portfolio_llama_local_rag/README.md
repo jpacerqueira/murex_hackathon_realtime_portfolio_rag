@@ -29,7 +29,7 @@ make build
 
 3. Run the containers (requires a local Llama server), either or both:
 ```bash
-export LLAMA_BASE_URL=http://host.docker.internal:11434/v1
+export LLAMA_BASE_URL=http://host.docker.internal:11434
 export LLAMA_INFERENCE_MODEL=llama3.2
 export LLAMA_EMBEDDING_MODEL=nomic-embed-text
 make run_all
@@ -100,7 +100,7 @@ streamlit run datamap/realtime_portfolio_schema_analyzer.py
 
 The following environment variables can be set when running the container:
 
-- `LLAMA_BASE_URL`: OpenAI-compatible Llama server base URL (default: http://host.docker.internal:11434/v1)
+- `LLAMA_BASE_URL`: OpenAI-compatible Llama server base URL (default: http://host.docker.internal:11434)
 - `LLAMA_API_KEY`: API key for the server if required (default: local)
 - `LLAMA_INFERENCE_MODEL`: Llama model to use (default: llama3.2)
 - `LLAMA_EMBEDDING_MODEL`: Embedding model to use (default: nomic-embed-text)
@@ -110,7 +110,7 @@ The following environment variables can be set when running the container:
 
 1. Quick Run Local Llama Server
 ```bash
-export LLAMA_BASE_URL="http://host.docker.internal:11434/v1" ; make build ; make run_all
+export LLAMA_BASE_URL="http://host.docker.internal:11434" ; make build ; make run_all
 ```
 
 ## Project Structure

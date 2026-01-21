@@ -3,7 +3,7 @@
 set -euo pipefail
 
 if [ -z "${LLAMA_BASE_URL:-}" ]; then
-    export LLAMA_BASE_URL="http://host.docker.internal:11434/v1"
+    export LLAMA_BASE_URL="http://host.docker.internal:11434"
 fi
 
 if [ -z "${LLAMA_API_KEY:-}" ]; then
