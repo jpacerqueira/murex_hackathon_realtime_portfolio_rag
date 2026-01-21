@@ -1,7 +1,11 @@
 import json
 from typing import List, Dict, Any, Tuple, Optional
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings, OllamaEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+try:
+    from langchain_ollama import OllamaEmbeddings
+except ImportError:
+    from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 try:
@@ -40,6 +44,15 @@ def _normalize_openai_base_url(base_url: str) -> str:
 def _get_env_default(name: str, default: str) -> str:
     value = os.getenv(name)
     return value if value else default
+
+def _get_env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
 
 class LlamaLocalDatamapRAG:
     def __init__(
@@ -186,9 +199,11 @@ class LlamaLocalDatamapRAG:
                 return False
 
             # Split text into chunks
+            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 2000)
+            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 200)
             text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=30000,
-                chunk_overlap=1500
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
             )
             texts = text_splitter.split_text(api_text)
 

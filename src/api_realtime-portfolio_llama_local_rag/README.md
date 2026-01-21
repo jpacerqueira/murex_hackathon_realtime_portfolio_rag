@@ -107,6 +107,8 @@ The following environment variables can be set when running the container:
 - `LLAMA_EMBEDDINGS_PROVIDER`: Embeddings provider (`openai`, `ollama`, or `hf`, default: ollama)
 - `HF_EMBEDDING_MODEL`: HuggingFace model when provider is `hf` (default: all-MiniLM-L6-v2)
 - `HF_EMBEDDING_CACHE_DIR`: Cache directory for HF models (default: /embedding_model)
+- `LLAMA_EMBEDDING_CHUNK_SIZE`: Text chunk size for embeddings (default: 2000)
+- `LLAMA_EMBEDDING_CHUNK_OVERLAP`: Chunk overlap for embeddings (default: 200)
 
 1. Quick Run Local Llama Server
 ```bash
