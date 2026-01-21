@@ -97,8 +97,11 @@ http://localhost:8000/redoc
 ```bash
 export LLAMA_BASE_URL=http://localhost:11434/v1
 export LLAMA_API_KEY=local
-export LLAMA_INFERENCE_MODEL=llama3.1
+export LLAMA_INFERENCE_MODEL=llama3.2
 export LLAMA_EMBEDDING_MODEL=nomic-embed-text
+export LLAMA_EMBEDDINGS_PROVIDER=openai
+export HF_EMBEDDING_MODEL=all-MiniLM-L6-v2
+export HF_EMBEDDING_CACHE_DIR=/embedding_model
 export DATAMAP_CONFIG_PATH=config/datamap_config.json
 ```
 
@@ -126,8 +129,9 @@ docker build -t realtime-portfolio-api .
 ```bash
 docker run -p 8000:8000 \
   -e LLAMA_BASE_URL=http://host.docker.internal:11434/v1 \
-  -e LLAMA_INFERENCE_MODEL=llama3.1 \
+  -e LLAMA_INFERENCE_MODEL=llama3.2 \
   -e LLAMA_EMBEDDING_MODEL=nomic-embed-text \
+  -e LLAMA_EMBEDDINGS_PROVIDER=openai \
   realtime-portfolio-api
 ```
 

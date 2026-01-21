@@ -1,6 +1,7 @@
 import json
 from typing import List, Dict, Any, Tuple, Optional
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 try:
@@ -67,14 +68,25 @@ class LlamaLocalDatamapRAG:
                 api_key = "local"
                 logger.info("LLAMA_API_KEY not set; using default local key")
 
-            embedding_model = os.getenv("LLAMA_EMBEDDING_MODEL", "nomic-embed-text")
-            self.embeddings = OpenAIEmbeddings(
-                model=embedding_model,
-                api_key=api_key,
-                base_url=base_url,
-            )
+            embeddings_provider = os.getenv("LLAMA_EMBEDDINGS_PROVIDER", "openai").lower()
+            if embeddings_provider == "hf":
+                hf_model = os.getenv("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+                hf_cache = os.getenv("HF_EMBEDDING_CACHE_DIR", "/embedding_model")
+                self.embeddings = HuggingFaceEmbeddings(
+                    model_name=hf_model,
+                    cache_folder=hf_cache,
+                )
+                logger.info("Embeddings: Using HuggingFace (%s)", hf_model)
+            else:
+                embedding_model = os.getenv("LLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+                self.embeddings = OpenAIEmbeddings(
+                    model=embedding_model,
+                    api_key=api_key,
+                    base_url=base_url,
+                )
+                logger.info("Embeddings: Using Llama server (%s)", embedding_model)
 
-            inference_model = os.getenv("LLAMA_INFERENCE_MODEL", "llama3.1")
+            inference_model = os.getenv("LLAMA_INFERENCE_MODEL", "llama3.2")
             self.llm = ChatOpenAI(
                 model=inference_model,
                 api_key=api_key,

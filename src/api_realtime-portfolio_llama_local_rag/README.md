@@ -30,7 +30,7 @@ make build
 3. Run the containers (requires a local Llama server), either or both:
 ```bash
 export LLAMA_BASE_URL=http://host.docker.internal:11434/v1
-export LLAMA_INFERENCE_MODEL=llama3.1
+export LLAMA_INFERENCE_MODEL=llama3.2
 export LLAMA_EMBEDDING_MODEL=nomic-embed-text
 make run_all
 OR 
@@ -102,8 +102,11 @@ The following environment variables can be set when running the container:
 
 - `LLAMA_BASE_URL`: OpenAI-compatible Llama server base URL (default: http://host.docker.internal:11434/v1)
 - `LLAMA_API_KEY`: API key for the server if required (default: local)
-- `LLAMA_INFERENCE_MODEL`: Llama model to use (default: llama3.1)
+- `LLAMA_INFERENCE_MODEL`: Llama model to use (default: llama3.2)
 - `LLAMA_EMBEDDING_MODEL`: Embedding model to use (default: nomic-embed-text)
+- `LLAMA_EMBEDDINGS_PROVIDER`: Embeddings provider (`openai` or `hf`, default: openai)
+- `HF_EMBEDDING_MODEL`: HuggingFace model when provider is `hf` (default: all-MiniLM-L6-v2)
+- `HF_EMBEDDING_CACHE_DIR`: Cache directory for HF models (default: /embedding_model)
 
 1. Quick Run Local Llama Server
 ```bash
