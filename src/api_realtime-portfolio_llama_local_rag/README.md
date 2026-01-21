@@ -104,7 +104,7 @@ The following environment variables can be set when running the container:
 - `LLAMA_API_KEY`: API key for the server if required (default: local)
 - `LLAMA_INFERENCE_MODEL`: Llama model to use (default: llama3.2)
 - `LLAMA_EMBEDDING_MODEL`: Embedding model to use (default: nomic-embed-text)
-- `LLAMA_EMBEDDINGS_PROVIDER`: Embeddings provider (`openai` or `hf`, default: openai)
+- `LLAMA_EMBEDDINGS_PROVIDER`: Embeddings provider (`openai`, `ollama`, or `hf`, default: openai)
 - `HF_EMBEDDING_MODEL`: HuggingFace model when provider is `hf` (default: all-MiniLM-L6-v2)
 - `HF_EMBEDDING_CACHE_DIR`: Cache directory for HF models (default: /embedding_model)
 

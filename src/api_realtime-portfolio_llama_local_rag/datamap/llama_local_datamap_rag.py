@@ -1,15 +1,7 @@
 import json
 from typing import List, Dict, Any, Tuple, Optional
-import requests
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
-try:
-    from langchain_core.embeddings import Embeddings
-except ImportError:
-    try:
-        from langchain.embeddings.base import Embeddings
-    except ImportError:
-        Embeddings = object
+from langchain_community.embeddings import HuggingFaceEmbeddings, OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 try:
@@ -45,35 +37,9 @@ def _normalize_openai_base_url(base_url: str) -> str:
         return normalized
     return f"{normalized}/v1"
 
-class LlamaServerEmbeddings(Embeddings):
-    """Minimal OpenAI-compatible embeddings client with string-only input."""
-
-    def __init__(self, base_url: str, api_key: str, model: str, timeout: int = 60):
-        self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
-        self.model = model
-        self.timeout = timeout
-
-    def _embed_text(self, text: str) -> List[float]:
-        payload = {"model": self.model, "input": text}
-        headers = {}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        response = requests.post(
-            f"{self.base_url}/embeddings",
-            json=payload,
-            headers=headers,
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["data"][0]["embedding"]
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return [self._embed_text(text) for text in texts]
-
-    def embed_query(self, text: str) -> List[float]:
-        return self._embed_text(text)
+def _get_env_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value if value else default
 
 class LlamaLocalDatamapRAG:
     def __init__(
@@ -115,17 +81,24 @@ class LlamaLocalDatamapRAG:
                 logger.info("LLAMA_API_KEY not set; using default local key")
 
             openai_base_url = _normalize_openai_base_url(base_url)
-            embeddings_provider = os.getenv("LLAMA_EMBEDDINGS_PROVIDER", "openai").lower()
+            embeddings_provider = _get_env_default("LLAMA_EMBEDDINGS_PROVIDER", "openai").lower()
             if embeddings_provider == "hf":
-                hf_model = os.getenv("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-                hf_cache = os.getenv("HF_EMBEDDING_CACHE_DIR", "/embedding_model")
+                hf_model = _get_env_default("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+                hf_cache = _get_env_default("HF_EMBEDDING_CACHE_DIR", "/embedding_model")
                 self.embeddings = HuggingFaceEmbeddings(
                     model_name=hf_model,
                     cache_folder=hf_cache,
                 )
                 logger.info("Embeddings: Using HuggingFace (%s)", hf_model)
+            elif embeddings_provider == "ollama":
+                embedding_model = _get_env_default("LLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+                self.embeddings = OllamaEmbeddings(
+                    model=embedding_model,
+                    base_url=base_url,
+                )
+                logger.info("Embeddings: Using Ollama (%s)", embedding_model)
             else:
-                embedding_model = os.getenv("LLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+                embedding_model = _get_env_default("LLAMA_EMBEDDING_MODEL", "nomic-embed-text")
                 self.embeddings = OpenAIEmbeddings(
                     model=embedding_model,
                     api_key=api_key,
@@ -133,7 +106,7 @@ class LlamaLocalDatamapRAG:
                 )
                 logger.info("Embeddings: Using Llama server (%s)", embedding_model)
 
-            inference_model = os.getenv("LLAMA_INFERENCE_MODEL", "llama3.2")
+            inference_model = _get_env_default("LLAMA_INFERENCE_MODEL", "llama3.2")
             self.llm = ChatOpenAI(
                 model=inference_model,
                 api_key=api_key,
@@ -143,22 +116,7 @@ class LlamaLocalDatamapRAG:
             )
             
             # Test the connection by making a simple embedding request
-            try:
-                test_embedding = self.embeddings.embed_query("test")
-            except Exception as e:
-                if "invalid input type" in str(e).lower() and embeddings_provider != "hf":
-                    logger.warning(
-                        "Embeddings server rejected list inputs; falling back to string-only client"
-                    )
-                    self.embeddings = LlamaServerEmbeddings(
-                        base_url=openai_base_url,
-                        api_key=api_key,
-                        model=embedding_model,
-                    )
-                    test_embedding = self.embeddings.embed_query("test")
-                else:
-                    raise
-
+            test_embedding = self.embeddings.embed_query("test")
             if not test_embedding:
                 raise ValueError("Failed to get test embedding from Llama server")
             
