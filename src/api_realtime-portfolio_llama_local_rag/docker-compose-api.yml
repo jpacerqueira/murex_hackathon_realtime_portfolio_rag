@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: llama_local_datamap_api.Dockerfile
+    container_name: llama-local-datamap-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LLAMA_BASE_URL=${LLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+      - LLAMA_API_KEY=${LLAMA_API_KEY:-local}
+      - LLAMA_INFERENCE_MODEL=${LLAMA_INFERENCE_MODEL:-llama3.1}
+      - LLAMA_EMBEDDING_MODEL=${LLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
+    volumes:
+      - ./config:/app/config
+    networks:
+      - llama-local-datamap-rag
+    restart: "on-failure:${RESTART_RETRIES:-300}"
+
+
+networks:
+  llama-local-datamap-rag:
+    name: llama-local-datamap-rag
+    driver: bridge
+

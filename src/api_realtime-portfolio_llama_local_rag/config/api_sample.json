@@ -1,0 +1,13 @@
+{
+    "model": "llama3.1",
+    "messages": [
+        {
+            "role": "user",
+            "content": "hello world"
+        }
+    ],
+    "temperature": 0.0,
+    "top_p": 0.2,
+    "max_tokens": 1000
+}
+

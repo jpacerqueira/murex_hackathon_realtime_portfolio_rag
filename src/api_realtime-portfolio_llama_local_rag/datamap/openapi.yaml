@@ -1,0 +1,337 @@
+openapi: 3.0.0
+info:
+  title: Realtime Portfolio API
+  description: |
+    Realtime Portfolio API helps you analyze and query API specifications using a local Llama server and RAG.
+
+    ## Features
+    * Natural language querying of API specifications
+    * Similarity-based API endpoint retrieval
+    * Endpoint and parameter-level API analysis
+    * Interactive API documentation
+    * Swagger/OpenAPI-based data source
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: root
+    description: Basic API information and health check
+  - name: analysis
+    description: API analysis and operations
+  - name: endpoints
+    description: Endpoint-specific operations and specifications
+  - name: parameters
+    description: Parameter-specific operations and analysis
+
+components:
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Natural language query about the API specification
+        k:
+          type: integer
+          description: Number of results to return
+          minimum: 1
+          maximum: 10
+          default: 3
+        context:
+          type: string
+          description: Context for the query
+          default: "api"
+        format_type:
+          type: string
+          description: Format type for the response
+          default: "json"
+    
+    EndpointRequest:
+      type: object
+      required:
+        - endpoint_path
+      properties:
+        endpoint_path:
+          type: string
+          description: Path of the endpoint to get specification for
+    
+    ParameterRequest:
+      type: object
+      required:
+        - endpoint_path
+        - parameter_name
+      properties:
+        endpoint_path:
+          type: string
+          description: Path of the endpoint
+        parameter_name:
+          type: string
+          description: Name of the parameter
+    
+    AnalysisResponse:
+      type: object
+      properties:
+        analysis:
+          type: string
+          description: Analysis results
+        query:
+          type: string
+          description: Original query
+    
+    APICallResponse:
+      type: object
+      properties:
+        api_call:
+          type: string
+          description: API call example
+        query:
+          type: string
+          description: Original query
+    
+    SimilarResponse:
+      type: object
+      properties:
+        similar_api:
+          type: array
+          items:
+            type: string
+          description: List of similar API endpoints
+        scores:
+          type: array
+          items:
+            type: number
+          description: Similarity scores for each entry
+    
+    EndpointResponse:
+      type: object
+      properties:
+        endpoint_path:
+          type: string
+          description: Endpoint path
+        method:
+          type: string
+          description: HTTP method
+        description:
+          type: string
+          description: Endpoint description
+        tags:
+          type: array
+          items:
+            type: string
+          description: Endpoint tags
+        parameters:
+          type: array
+          items:
+            type: object
+          description: Endpoint parameters
+        request_body:
+          type: string
+          nullable: true
+          description: Request body schema
+        responses:
+          type: object
+          description: Response schemas
+    
+    ParameterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Parameter name
+        type:
+          type: string
+          description: Parameter data type
+        required:
+          type: boolean
+          description: Whether parameter is required
+        description:
+          type: string
+          description: Parameter description
+        location:
+          type: string
+          description: Parameter location (query, path, header, etc.)
+    
+    APISummaryResponse:
+      type: object
+      properties:
+        total_endpoints:
+          type: integer
+          description: Total number of endpoints
+        endpoints:
+          type: array
+          items:
+            type: object
+          description: List of endpoints with specifications
+    
+    ConfigRequest:
+      type: object
+      properties:
+        config:
+          type: object
+          description: Configuration data for the analyzer
+
+paths:
+  /:
+    get:
+      tags:
+        - root
+      summary: Root endpoint returning API status
+      responses:
+        '200':
+          description: API status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  
+  /initialize:
+    post:
+      tags:
+        - root
+      summary: Initialize the analyzer with provided configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+      responses:
+        '200':
+          description: Analyzer initialized successfully
+        '500':
+          description: Error initializing analyzer
+  
+  /analyze:
+    post:
+      tags:
+        - analysis
+      summary: Analyze API specification based on natural language query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '500':
+          description: Error processing query
+  
+  /api_call:
+    post:
+      tags:
+        - analysis
+      summary: Get API call example in context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: API call example
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APICallResponse'
+        '500':
+          description: Error processing query
+  
+  /similar:
+    post:
+      tags:
+        - analysis
+      summary: Get similar API endpoints with similarity scores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Similar API endpoints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimilarResponse'
+        '500':
+          description: Error processing query
+  
+  /endpoint:
+    post:
+      tags:
+        - endpoints
+      summary: Get detailed specification information about a specific endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndpointRequest'
+      responses:
+        '200':
+          description: Endpoint specification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EndpointResponse'
+        '500':
+          description: Error getting endpoint spec
+  
+  /parameter:
+    post:
+      tags:
+        - parameters
+      summary: Get detailed information about a specific parameter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParameterRequest'
+      responses:
+        '200':
+          description: Parameter information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParameterResponse'
+        '500':
+          description: Error getting parameter info
+  
+  /api_summary:
+    get:
+      tags:
+        - analysis
+      summary: Get summary of entire API specification
+      responses:
+        '200':
+          description: API summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APISummaryResponse'
+        '500':
+          description: Error getting API summary
+
