@@ -1,7 +1,15 @@
 import json
 from typing import List, Dict, Any, Tuple, Optional
+import requests
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
+try:
+    from langchain_core.embeddings import Embeddings
+except ImportError:
+    try:
+        from langchain.embeddings.base import Embeddings
+    except ImportError:
+        Embeddings = object
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 try:
@@ -36,6 +44,36 @@ def _normalize_openai_base_url(base_url: str) -> str:
     if normalized.endswith("/v1"):
         return normalized
     return f"{normalized}/v1"
+
+class LlamaServerEmbeddings(Embeddings):
+    """Minimal OpenAI-compatible embeddings client with string-only input."""
+
+    def __init__(self, base_url: str, api_key: str, model: str, timeout: int = 60):
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.model = model
+        self.timeout = timeout
+
+    def _embed_text(self, text: str) -> List[float]:
+        payload = {"model": self.model, "input": text}
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        response = requests.post(
+            f"{self.base_url}/embeddings",
+            json=payload,
+            headers=headers,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data["data"][0]["embedding"]
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [self._embed_text(text) for text in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed_text(text)
 
 class LlamaLocalDatamapRAG:
     def __init__(
@@ -105,7 +143,22 @@ class LlamaLocalDatamapRAG:
             )
             
             # Test the connection by making a simple embedding request
-            test_embedding = self.embeddings.embed_query("test")
+            try:
+                test_embedding = self.embeddings.embed_query("test")
+            except Exception as e:
+                if "invalid input type" in str(e).lower() and embeddings_provider != "hf":
+                    logger.warning(
+                        "Embeddings server rejected list inputs; falling back to string-only client"
+                    )
+                    self.embeddings = LlamaServerEmbeddings(
+                        base_url=openai_base_url,
+                        api_key=api_key,
+                        model=embedding_model,
+                    )
+                    test_embedding = self.embeddings.embed_query("test")
+                else:
+                    raise
+
             if not test_embedding:
                 raise ValueError("Failed to get test embedding from Llama server")
             
