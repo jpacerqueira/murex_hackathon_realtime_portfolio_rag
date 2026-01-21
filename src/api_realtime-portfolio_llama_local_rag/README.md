@@ -136,6 +136,19 @@ The project includes:
 - Type checking with mypy
 - Code formatting with black and isort
 
+## Make sure Ollama Server runs localy with modes ollama3.2 and nomic-embed-tex
+```bash
+admin@MacBookPro api_realtime-portfolio_llama_local_rag % ollama ps          
+NAME                       ID              SIZE      PROCESSOR    CONTEXT    UNTIL              
+nomic-embed-text:latest    0a109f422b47    565 MB    100% CPU     8192       3 minutes from now    
+admin@MacBookPro api_realtime-portfolio_llama_local_rag % ollama list
+NAME                       ID              SIZE      MODIFIED       
+nomic-embed-text:latest    0a109f422b47    274 MB    23 minutes ago    
+llama2:latest              78e26419b446    3.8 GB    14 months ago     
+llama3.2:latest            a80c4f17acd5    2.0 GB    15 months ago     
+admin@MacBookPro api_realtime-portfolio_llama_local_rag %
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
