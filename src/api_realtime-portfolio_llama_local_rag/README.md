@@ -2,7 +2,7 @@
 
 This application provides a RAG-based API specification and analysis system for Swagger/OpenAPI files using a local Llama server and FAISS.
 
-![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img1.png)
+![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img2.png)
 
 ## Prerequisites
 
