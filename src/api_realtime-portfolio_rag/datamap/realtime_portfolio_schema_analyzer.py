@@ -148,9 +148,9 @@ def create_streamlit_app():
     if use_files:
         file_col1, file_col2 = st.columns(2)
         with file_col1:
-            api_sample_file_path = st.text_input("API Sample File Path:", "datamap/API_SAMPLE.txt")
+            api_sample_file_path = st.text_input("API Sample File Path:", "/app/datamap/API_SAMPLE.txt")
         with file_col2:
-            swagger_file_path = st.text_input("Swagger File Path:", "datamap/SWAGGER_SAMPLE.JSON")
+            swagger_file_path = st.text_input("Swagger File Path:", "/app/datamap/SWAGGER_SAMPLE.JSON")
     else:
         api_sample_file_path = ""
         swagger_file_path = ""
