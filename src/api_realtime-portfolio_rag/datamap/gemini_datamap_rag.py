@@ -33,6 +33,8 @@ class GeminiDatamapRAG:
         self,
         api_base_url: str = "",
         swagger_url: str = "",
+        swagger_file_path: str = "",
+        api_sample_file_path: str = "",
         region_name: str = "us-central1",
         gcp_credentials: Optional[Dict[str, str]] = None,
         cache_size: int = 128
@@ -47,7 +49,13 @@ class GeminiDatamapRAG:
             cache_size (int): Maximum number of API endpoints to cache in memory
         """
         self.region_name = region_name
-        self.api_data_source = APISwaggerDataSource(api_base_url, swagger_url, cache_size)
+        self.api_data_source = APISwaggerDataSource(
+            api_base_url=api_base_url,
+            swagger_url=swagger_url,
+            swagger_file_path=swagger_file_path,
+            api_sample_file_path=api_sample_file_path,
+            cache_size=cache_size,
+        )
         
         try:
             # Configure GCP credentials

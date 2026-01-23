@@ -14,7 +14,15 @@ from urllib.parse import urlparse
 load_dotenv()
 
 class DataMapAPIAnalyzer:
-    def __init__(self, api_base_url: str = "", swagger_url: str = "", region_name: str = "local", cache_size: int = 128):
+    def __init__(
+        self,
+        api_base_url: str = "",
+        swagger_url: str = "",
+        swagger_file_path: str = "",
+        api_sample_file_path: str = "",
+        region_name: str = "local",
+        cache_size: int = 128,
+    ):
         """Initialize the DataMapAPIAnalyzer with API configuration.
         
         Args:
@@ -26,8 +34,10 @@ class DataMapAPIAnalyzer:
         self.rag = LlamaLocalDatamapRAG(
             api_base_url=api_base_url,
             swagger_url=swagger_url,
+            swagger_file_path=swagger_file_path,
+            api_sample_file_path=api_sample_file_path,
             region_name=region_name,
-            cache_size=cache_size
+            cache_size=cache_size,
         )
         self.rag_ready = False
         self._initialize_rag()
@@ -113,12 +123,26 @@ def create_streamlit_app():
     if 'analyzer' not in st.session_state:
         st.session_state.analyzer = None
     
+    # Learning source selection
+    source_choice = st.radio("Learn API from:", ["URLs", "Local files"], horizontal=True)
+    use_files = source_choice == "Local files"
+
     # API configuration
     col1, col2 = st.columns(2)
     with col1:
-        api_base_url = st.text_input("API Base URL:", "")
+        api_base_url = st.text_input("API Base URL:", "", disabled=use_files)
     with col2:
-        swagger_url = st.text_input("Swagger/OpenAPI URL:", "")
+        swagger_url = st.text_input("Swagger/OpenAPI URL:", "", disabled=use_files)
+
+    if use_files:
+        file_col1, file_col2 = st.columns(2)
+        with file_col1:
+            api_sample_file_path = st.text_input("API Sample File Path:", "datamap/API_SAMPLE.txt")
+        with file_col2:
+            swagger_file_path = st.text_input("Swagger File Path:", "datamap/SWAGGER_SAMPLE.JSON")
+    else:
+        api_sample_file_path = ""
+        swagger_file_path = ""
     
     # Advanced settings
     with st.expander("Advanced Settings"):
@@ -132,27 +156,50 @@ def create_streamlit_app():
     if st.button("Initialize Analyzer"):
         try:
             with st.spinner("Initializing API analyzer..."):
-                swagger_url_clean = (swagger_url or "").strip()
-                swagger_valid = _is_valid_url(swagger_url_clean)
-                api_url_clean = (api_base_url or "").strip()
-                api_url_valid = _is_valid_url(api_url_clean)
-                if not swagger_url_clean or not swagger_valid:
-                    if api_url_valid:
+                if use_files:
+                    swagger_file_exists = bool(swagger_file_path and os.path.exists(swagger_file_path))
+                    api_sample_exists = bool(api_sample_file_path and os.path.exists(api_sample_file_path))
+                    if not swagger_file_exists:
                         warning_msg = (
-                            "Swagger URL is optional. Initializing embeddings from the API Base URL only "
-                            "because the Swagger URL is empty or invalid."
+                            "Swagger file path is missing or invalid. "
+                            "No Swagger endpoints will be learned from files."
                         )
-                    else:
+                        st.warning(warning_msg)
+                        warnings.warn(warning_msg)
+                    if not api_sample_exists:
                         warning_msg = (
-                            "Swagger URL is optional. Initializing without learning embeddings because both "
-                            "Swagger URL and API Base URL are empty or invalid."
+                            "API sample file path is missing or invalid. "
+                            "No API sample content will be learned from files."
                         )
-                    st.warning(warning_msg)
-                    warnings.warn(warning_msg)
+                        st.warning(warning_msg)
+                        warnings.warn(warning_msg)
+                else:
+                    swagger_url_clean = (swagger_url or "").strip()
+                    swagger_valid = _is_valid_url(swagger_url_clean)
+                    api_url_clean = (api_base_url or "").strip()
+                    api_url_valid = _is_valid_url(api_url_clean)
+                    if not swagger_url_clean or not swagger_valid:
+                        if api_url_valid:
+                            warning_msg = (
+                                "Swagger URL is optional. Initializing embeddings from the API Base URL only "
+                                "because the Swagger URL is empty or invalid."
+                            )
+                        else:
+                            warning_msg = (
+                                "Swagger URL is optional. Initializing without learning embeddings because both "
+                                "Swagger URL and API Base URL are empty or invalid."
+                            )
+                        st.warning(warning_msg)
+                        warnings.warn(warning_msg)
+
+                api_base_url_value = "" if use_files else api_base_url
+                swagger_url_value = "" if use_files else swagger_url
 
                 st.session_state.analyzer = DataMapAPIAnalyzer(
-                    api_base_url=api_base_url,
-                    swagger_url=swagger_url,
+                    api_base_url=api_base_url_value,
+                    swagger_url=swagger_url_value,
+                    swagger_file_path=swagger_file_path,
+                    api_sample_file_path=api_sample_file_path,
                     region_name=region_name,
                     cache_size=cache_size
                 )

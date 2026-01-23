@@ -1,0 +1,246 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Realtime Portfolio API",
+    "version": "1.0.0",
+    "description": "Sample Swagger specification for local file-based learning."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root endpoint returning API status",
+        "responses": {
+          "200": {
+            "description": "API status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/initialize": {
+      "post": {
+        "summary": "Initialize the analyzer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "api_base_url": {
+                        "type": "string"
+                      },
+                      "swagger_url": {
+                        "type": "string"
+                      },
+                      "region_name": {
+                        "type": "string"
+                      },
+                      "cache_size": {
+                        "type": "integer"
+                      },
+                      "pattern": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analyzer initialized"
+          }
+        }
+      }
+    },
+    "/analyze": {
+      "post": {
+        "summary": "Analyze API specification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "format_type": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis result"
+          }
+        }
+      }
+    },
+    "/api_call": {
+      "post": {
+        "summary": "Get API call example in context",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "format_type": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "API call example"
+          }
+        }
+      }
+    },
+    "/similar": {
+      "post": {
+        "summary": "Get similar API endpoints",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "k": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Similarity results"
+          }
+        }
+      }
+    },
+    "/endpoint": {
+      "post": {
+        "summary": "Get endpoint specification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoint_path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Endpoint specification"
+          }
+        }
+      }
+    },
+    "/parameter": {
+      "post": {
+        "summary": "Get parameter information",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoint_path": {
+                    "type": "string"
+                  },
+                  "parameter_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parameter details"
+          }
+        }
+      }
+    },
+    "/api_summary": {
+      "get": {
+        "summary": "Get API summary",
+        "responses": {
+          "200": {
+            "description": "API summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_endpoints": {
+                      "type": "integer"
+                    },
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

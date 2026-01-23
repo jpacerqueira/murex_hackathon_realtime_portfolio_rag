@@ -7,6 +7,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import re
 from urllib.parse import urlparse
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +15,14 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 class APISwaggerDataSource:
-    def __init__(self, api_base_url: str = "", swagger_url: str = "", cache_size: int = 128):
+    def __init__(
+        self,
+        api_base_url: str = "",
+        swagger_url: str = "",
+        swagger_file_path: str = "",
+        api_sample_file_path: str = "",
+        cache_size: int = 128,
+    ):
         """Initialize API/Swagger data source handler.
         
         Args:
@@ -24,15 +32,88 @@ class APISwaggerDataSource:
         """
         self.api_base_url = api_base_url
         self.swagger_url = swagger_url
+        self.swagger_file_path = swagger_file_path
+        self.api_sample_file_path = api_sample_file_path
         self._cache_size = cache_size
         self._swagger_spec = None
+
+    def _resolve_path(self, file_path: str) -> Optional[Path]:
+        """Resolve a file path against cwd or module directory."""
+        if not file_path:
+            return None
+        candidate = Path(file_path)
+        if candidate.is_absolute() and candidate.exists():
+            return candidate
+        cwd_candidate = Path.cwd() / candidate
+        if cwd_candidate.exists():
+            return cwd_candidate
+        module_candidate = Path(__file__).resolve().parent / candidate
+        if module_candidate.exists():
+            return module_candidate
+        logger.warning("File path not found: %s", file_path)
+        return None
+
+    def _read_text_file(self, file_path: str) -> Optional[str]:
+        resolved = self._resolve_path(file_path)
+        if not resolved:
+            return None
+        try:
+            return resolved.read_text(encoding="utf-8")
+        except Exception as e:
+            logger.warning("Failed to read file %s: %s", resolved, str(e))
+            return None
+
+    def _load_swagger_from_file(self) -> Dict[str, Any]:
+        """Load Swagger/OpenAPI specification from a local JSON file."""
+        if not self.swagger_file_path:
+            return {}
+        content = self._read_text_file(self.swagger_file_path)
+        if not content:
+            return {}
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.warning("Swagger file is not valid JSON: %s", str(e))
+            return {}
+
+    def _load_api_sample_text(self) -> Optional[str]:
+        """Load API sample text from a local file."""
+        if not self.api_sample_file_path:
+            return None
+        return self._read_text_file(self.api_sample_file_path)
+
+    def _build_api_sample_endpoint(self, sample_text: str) -> Dict[str, Any]:
+        """Create a pseudo-endpoint to embed API samples."""
+        sample_text = (sample_text or "").strip()
+        if len(sample_text) > 8000:
+            sample_text = sample_text[:8000]
+        return {
+            "endpoint_path": "API_SAMPLE",
+            "method": "SAMPLE",
+            "description": "Sample API usage loaded from a local file.",
+            "tags": ["sample"],
+            "parameters": [],
+            "request_body": sample_text,
+            "responses": {
+                "200": {
+                    "description": "API sample content",
+                    "schema": {"sample": sample_text},
+                }
+            },
+            "operation_id": "API_SAMPLE",
+        }
         
     def _fetch_swagger_spec(self) -> Dict[str, Any]:
         """Fetch and parse Swagger/OpenAPI specification."""
         if self._swagger_spec is not None:
             return self._swagger_spec
-        
+
         try:
+            swagger_file_spec = self._load_swagger_from_file()
+            if swagger_file_spec:
+                self._swagger_spec = swagger_file_spec
+                return self._swagger_spec
+
             swagger_url = (self.swagger_url or "").strip()
             if not swagger_url:
                 logger.warning("Swagger URL is empty; skipping Swagger fetch")
@@ -207,41 +288,49 @@ class APISwaggerDataSource:
         """
         try:
             endpoint_keys = self.list_endpoints(pattern)
+            api_specs: List[Dict[str, Any]] = []
             if endpoint_keys:
-                return [self.get_endpoint_spec(key) for key in endpoint_keys]
+                api_specs = [self.get_endpoint_spec(key) for key in endpoint_keys]
+            else:
+                api_url = (self.api_base_url or "").strip()
+                if api_url and self._is_valid_url(api_url):
+                    sample = self._fetch_base_url_sample()
+                    response_schema = None
+                    response_description = "Base URL provided without Swagger. Limited endpoint details."
+                    if sample:
+                        response_description += (
+                            f" Status: {sample.get('status_code')}. "
+                            f"Content-Type: {sample.get('content_type')}"
+                        )
+                        content = sample.get("content")
+                        if isinstance(content, (dict, list)):
+                            response_schema = content
+                        elif content:
+                            response_schema = {"sample": content}
 
-            api_url = (self.api_base_url or "").strip()
-            if not api_url or not self._is_valid_url(api_url):
-                return []
-
-            sample = self._fetch_base_url_sample()
-            response_schema = None
-            response_description = "Base URL provided without Swagger. Limited endpoint details."
-            if sample:
-                response_description += f" Status: {sample.get('status_code')}. Content-Type: {sample.get('content_type')}"
-                content = sample.get("content")
-                if isinstance(content, (dict, list)):
-                    response_schema = content
-                elif content:
-                    response_schema = {"sample": content}
-
-            return [
-                {
-                    "endpoint_path": api_url,
-                    "method": "GET",
-                    "description": "API base URL provided without Swagger. Limited endpoint details.",
-                    "tags": ["base-url"],
-                    "parameters": [],
-                    "request_body": None,
-                    "responses": {
-                        "200": {
-                            "description": response_description,
-                            "schema": response_schema,
+                    api_specs = [
+                        {
+                            "endpoint_path": api_url,
+                            "method": "GET",
+                            "description": "API base URL provided without Swagger. Limited endpoint details.",
+                            "tags": ["base-url"],
+                            "parameters": [],
+                            "request_body": None,
+                            "responses": {
+                                "200": {
+                                    "description": response_description,
+                                    "schema": response_schema,
+                                }
+                            },
+                            "operation_id": "GET_BASE_URL",
                         }
-                    },
-                    "operation_id": "GET_BASE_URL",
-                }
-            ]
+                    ]
+
+            sample_text = self._load_api_sample_text()
+            if sample_text:
+                api_specs.append(self._build_api_sample_endpoint(sample_text))
+
+            return api_specs
         except Exception as e:
             logger.error(f"Error getting all endpoints: {str(e)}")
             raise
