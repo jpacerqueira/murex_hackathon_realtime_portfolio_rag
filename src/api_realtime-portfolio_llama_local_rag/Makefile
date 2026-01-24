@@ -36,8 +36,8 @@ help:
 
 load_data_files:
 	@echo "Loading data files..."
-	cat ~/Desktop/API.txt > ./datamap/API_SAMPLE.txt
-	cat ~/Desktop/SWAGGER.json > ./datamap/SWAGGER_SAMPLE.json
+	cat ~/Desktop/hackathon/API.txt > ./datamap/API_SAMPLE.txt
+	cat ~/Desktop/hackathon/SWAGGER.json > ./datamap/SWAGGER_SAMPLE.json
 	@echo "Data files loaded successfully."
 
 build:
