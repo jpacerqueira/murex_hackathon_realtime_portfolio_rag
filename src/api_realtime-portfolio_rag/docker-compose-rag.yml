@@ -1,0 +1,24 @@
+services:
+
+  analyzer:
+    build:
+      context: .
+      dockerfile: streamlit_app.Dockerfile
+    container_name: gemini-datamap-analyzer
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
+      - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}
+    volumes:
+      - ./config:/app/config
+    networks:
+      - gemini-datamap-rag
+    restart: "on-failure:${RESTART_RETRIES:-300}"
+
+networks:
+  gemini-datamap-rag:
+    name: gemini-datamap-rag
+    driver: bridge
+

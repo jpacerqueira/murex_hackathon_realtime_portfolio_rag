@@ -1,0 +1,8 @@
+{
+    "api_base_url": "https://api-cloud-risk.insureyourtech.cloud/cloud-services-risk-ratings/risk-ratings-premium/premium/list/all/services?customerId=2",
+    "swagger_url": "",
+    "region_name": "us-central1",
+    "cache_size": 128,
+    "pattern": ""
+}
+

@@ -1,0 +1,55 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: llama_local_datamap_api.Dockerfile
+    container_name: llama-local-datamap-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LLAMA_BASE_URL=${LLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - LLAMA_API_KEY=${LLAMA_API_KEY:-local}
+      - LLAMA_INFERENCE_MODEL=${LLAMA_INFERENCE_MODEL:-llama3.2}
+      - LLAMA_EMBEDDING_MODEL=${LLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      - LLAMA_EMBEDDINGS_PROVIDER=${LLAMA_EMBEDDINGS_PROVIDER:-ollama}
+      - LLAMA_EMBEDDING_CHUNK_SIZE=${LLAMA_EMBEDDING_CHUNK_SIZE:-2000}
+      - LLAMA_EMBEDDING_CHUNK_OVERLAP=${LLAMA_EMBEDDING_CHUNK_OVERLAP:-200}
+      - HF_EMBEDDING_MODEL=${HF_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - HF_EMBEDDING_CACHE_DIR=${HF_EMBEDDING_CACHE_DIR:-/embedding_model}
+      - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
+    volumes:
+      - ./config:/app/config
+      - ./embedding_model:/embedding_model
+    networks:
+      - llama-local-datamap-rag
+    restart: "on-failure:${RESTART_RETRIES:-300}"
+
+  analyzer:
+    build:
+      context: .
+      dockerfile: streamlit_app.Dockerfile
+    container_name: llama-local-datamap-analyzer
+    ports:
+      - "8501:8501"
+    environment:
+      - LLAMA_BASE_URL=${LLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - LLAMA_API_KEY=${LLAMA_API_KEY:-local}
+      - LLAMA_INFERENCE_MODEL=${LLAMA_INFERENCE_MODEL:-llama3.2}
+      - LLAMA_EMBEDDING_MODEL=${LLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      - LLAMA_EMBEDDINGS_PROVIDER=${LLAMA_EMBEDDINGS_PROVIDER:-ollama}
+      - LLAMA_EMBEDDING_CHUNK_SIZE=${LLAMA_EMBEDDING_CHUNK_SIZE:-2000}
+      - LLAMA_EMBEDDING_CHUNK_OVERLAP=${LLAMA_EMBEDDING_CHUNK_OVERLAP:-200}
+      - HF_EMBEDDING_MODEL=${HF_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - HF_EMBEDDING_CACHE_DIR=${HF_EMBEDDING_CACHE_DIR:-/embedding_model}
+    volumes:
+      - ./config:/app/config
+      - ./embedding_model:/embedding_model
+    networks:
+      - llama-local-datamap-rag
+    restart: "on-failure:${RESTART_RETRIES:-300}"
+
+networks:
+  llama-local-datamap-rag:
+    name: llama-local-datamap-rag
+    driver: bridge
+

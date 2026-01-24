@@ -1,0 +1,23 @@
+{
+    "modelId": "gemini-3-flash-preview",
+    "contentType": "application/json",
+    "accept": "application/json",
+    "body": {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": "hello world"
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.0,
+            "topK": 10,
+            "topP": 0.2,
+            "maxOutputTokens": 10000
+        }
+    }
+}
+
