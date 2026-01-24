@@ -1,857 +1,1719 @@
-openapi: 3.0.0
-info:
-  title: Cloud Services Risk Ratings API
-  description: API for retrieving cloud services risk ratings and related information
-  version: 1.0.0
-
-servers:
-  - url: /api/v1
-
-paths:
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/list/all/services:
-    get:
-      summary: Get all risk ratings (Freemium)
-      description: Retrieves a list of all cloud service risk ratings (limited to 100000 records)
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/BasicRiskRating'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/id/{id}:
-    get:
-      summary: Get risk rating by ID (Freemium)
-      description: Retrieves detailed risk rating information for a specific service by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_provider/{service_provider}:
-    get:
-      summary: Get risk rating by service provider (Freemium)
-      description: Retrieves detailed risk rating information for a specific service provider
-      parameters:
-        - name: service_provider
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_name/{service_name}:
-    get:
-      summary: Get risk rating by service name (Freemium)
-      description: Retrieves detailed risk rating information for a specific service name
-      parameters:
-        - name: service_name
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_name/{service_name}/global_or_by_regions/{global_or_by_regions}:
-    get:
-      summary: Get risk rating by service name and region type (Freemium)
-      description: Retrieves detailed risk rating information for a specific service name and region type (global or regional)
-      parameters:
-        - name: service_name
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: global_or_by_regions
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [global, regional]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '400':
-          description: Invalid global_or_by_regions parameter
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/list/all:
-    get:
-      summary: Get all outage reports (Freemium)
-      description: Retrieves a list of all cloud service outage reports (limited to 100000 records)
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/provider/{provider}:
-    get:
-      summary: Get outage reports by provider (Freemium)
-      description: Retrieves outage reports for a specific cloud provider
-      parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/service/{service}:
-    get:
-      summary: Get outage reports by service (Freemium)
-      description: Retrieves outage reports for a specific cloud service
-      parameters:
-        - name: service
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/region/{region}:
-    get:
-      summary: Get outage reports by region (Freemium)
-      description: Retrieves outage reports for a specific region
-      parameters:
-        - name: region
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/list/all/services:
-    get:
-      summary: Get all risk ratings (Premium)
-      description: Retrieves a list of all cloud service risk ratings with full details (limited to 100000 records)
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailedRiskRating'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/id/{id}:
-    get:
-      summary: Get risk rating by ID (Premium)
-      description: Retrieves detailed risk rating information for a specific service by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_provider/{service_provider}:
-    get:
-      summary: Get risk rating by service provider (Premium)
-      description: Retrieves detailed risk rating information for a specific service provider
-      parameters:
-        - name: service_provider
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_name/{service_name}:
-    get:
-      summary: Get risk rating by service name (Premium)
-      description: Retrieves detailed risk rating information for a specific service name
-      parameters:
-        - name: service_name
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailedRiskRating'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_name/{service_name}/global_or_by_regions/{global_or_by_regions}:
-    get:
-      summary: Get risk rating by service name and region type (Premium)
-      description: Retrieves detailed risk rating information for a specific service name and region type
-      parameters:
-        - name: service_name
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: global_or_by_regions
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [global, regional]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetailedRiskRating'
-        '400':
-          description: Invalid global_or_by_regions parameter
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Risk rating not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/list/all:
-    get:
-      summary: Get all outage reports (Premium)
-      description: Retrieves a list of all cloud service outage reports (limited to 100000 records)
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/provider/{provider}:
-    get:
-      summary: Get outage reports by provider (Premium)
-      description: Retrieves outage reports for a specific cloud provider
-      parameters:
-        - name: provider
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/service/{service}:
-    get:
-      summary: Get outage reports by service (Premium)
-      description: Retrieves outage reports for a specific cloud service
-      parameters:
-        - name: service
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/region/{region}:
-    get:
-      summary: Get outage reports by region (Premium)
-      description: Retrieves outage reports for a specific region
-      parameters:
-        - name: region
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutageReport'
-        '404':
-          description: No outage reports found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/customers/list/all:
-    get:
-      summary: Get all customers (Freemium)
-      description: Retrieves a list of all customers for the freemium service
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FreemiumCustomer'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/customers/list/all:
-    get:
-      summary: Get all customers (Premium)
-      description: Retrieves a list of all customers for the premium service
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PremiumCustomer'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/customers/fetch/customer/{customer_id}:
-    get:
-      summary: Get customer by ID (Freemium)
-      description: Retrieves detailed customer information and their submissions for a specific customer ID
-      parameters:
-        - name: customer_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FreemiumCustomerWithSubmissions'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /cloud-services-risk-ratings/risk-ratings-premium/premium/customers/fetch/customer/{customer_id}:
-    get:
-      summary: Get customer by ID (Premium)
-      description: Retrieves detailed customer information and their submissions for a specific customer ID
-      parameters:
-        - name: customer_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PremiumCustomerWithSubmissions'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-components:
-  schemas:
-    BasicRiskRating:
-      type: object
-      properties:
-        database_key_id:
-          type: string
-        service_name:
-          type: string
-        service_provider:
-          type: string
-        global_or_by_regions:
-          type: string
-        region:
-          type: string
-
-    DetailedRiskRating:
-      type: object
-      properties:
-        database_key_id:
-          type: string
-        service_name:
-          type: string
-        service_provider:
-          type: string
-        global_or_by_regions:
-          type: string
-        region:
-          type: string
-        service_sla_0_99_9999_for_tier1:
-          type: number
-        service_sla_0_99_9999_for_tier2:
-          type: number
-        service_sla_0_99_9999_for_tier3:
-          type: number
-        service_sla_0_99_9999_for_tier4:
-          type: number
-        percentage_service_credit_back_tier1:
-          type: number
-        percentage_service_credit_back_tier2:
-          type: number
-        percentage_service_credit_back_tier3:
-          type: number
-        percentage_service_credit_back_tier4:
-          type: number
-        expected_annual_service_minutes_down_by_sla_tier1:
-          type: number
-        expected_annual_service_minutes_down_by_sla_tier2:
-          type: number
-        expected_annual_service_minutes_down_by_sla_tier3:
-          type: number
-        expected_annual_service_minutes_down_by_sla_tier4:
-          type: number
-        expected_percentage_mins_down_inside_agreed_sla_tier1:
-          type: number
-        webscraper_annual_period_service_down_per_year_in_minutes:
-          type: number
-        expected_percentage_mins_down_on_agreed_sla:
-          type: number
-        actual_percentage_total_mins_down_from_webscraping:
-          type: number
-        service_sla_usage_percentage:
-          type: number
-        service_traffic_coef_by_percent_down:
-          type: number
-        sla_deviation_connected_risk_0_999:
-          type: number
-        usage_connected_risk_0_999:
-          type: number
-        annual_outage_time_days_hours_mins:
-          type: string
-        remarks_outage_genai:
-          type: string
-
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-    OutageReport:
-      type: object
-      properties:
-        provider:
-          type: string
-        service:
-          type: string
-        region:
-          type: string
-        outage_start_time:
-          type: string
-        outage_end_time:
-          type: string
-        outage_duration:
-          type: number
-        outage_reason:
-          type: string
-    FreemiumCustomer:
-      type: object
-      properties:
-        id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        customername:
-          type: string
-        company:
-          type: string
-        country:
-          type: string
-        is_active:
-          type: boolean
-        is_deleted:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    PremiumCustomer:
-      type: object
-      properties:
-        id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        customername:
-          type: string
-        company:
-          type: string
-        country:
-          type: string
-        subscription_type:
-          type: string
-          enum: [monthly, yearly]
-        subscription_start_date:
-          type: string
-          format: date-time
-        subscription_end_date:
-          type: string
-          format: date-time
-        is_active:
-          type: boolean
-        is_deleted:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    CustomerSubmission:
-      type: object
-      properties:
-        id:
-          type: string
-        user_id:
-          type: string
-        submission_data:
-          type: object
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    FreemiumCustomerWithSubmissions:
-      allOf:
-        - $ref: '#/components/schemas/FreemiumCustomer'
-        - type: object
-          properties:
-            submissions:
-              type: array
-              items:
-                $ref: '#/components/schemas/CustomerSubmission'
-    PremiumCustomerWithSubmissions:
-      allOf:
-        - $ref: '#/components/schemas/PremiumCustomer'
-        - type: object
-          properties:
-            submissions:
-              type: array
-              items:
-                $ref: '#/components/schemas/CustomerSubmission'
-
-  parameters:
-    customerIdParam:
-      name: customerId
-      in: query
-      required: true
-      description: Customer ID for authentication and access control
-      schema:
-        type: string
-
-  responses:
-    PremiumRequired:
-      description: Premium subscription required
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Premium access required"
-              current_subscription:
-                type: string
-                example: "freemium"
-              details:
-                type: string
-                example: "This endpoint requires a premium subscription"
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Trade Blotter",
+    "description": "The Trade Blotter API allows retrieving a list of trades available in MX.\n\n* different sets of fields (`trade-views`) can be retrieved per trade. The set of fields are predefined per server-side configuration\n* dynamically filter the list of trades retrieved\n* subscribe to trade-views, to receive updates matching filtering criteria\n\nThe API can be used to serve named MX user use cases or Client Servicing use cases.\n",
+    "contact": {
+      "url": "https://developer.murex.com",
+      "name": "Public APIs Support"
+    },
+    "x-api-id": "trade-blotter",
+    "x-audience": "public",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/v1/api/trade-blotter",
+      "description": "Local Deployment"
+    },
+    {
+      "url": "{protocol}://{host}:{port}/v1/api/trade-blotter",
+      "description": "API Load Balancer",
+      "variables": {
+        "protocol": {
+          "description": "Protocol to use",
+          "enum": [
+            "http",
+            "https"
+          ],
+          "default": "https"
+        },
+        "host": {
+          "description": "Hostname of MX server",
+          "default": "apimancer"
+        },
+        "port": {
+          "description": "Port of the Public API Load Balancer (api-load-balancer service)",
+          "default": "25209"
+        }
+      }
+    },
+    {
+      "url": "{fqdn}/v1/api/trade-blotter",
+      "description": "API Load Balancer  (FQDN)",
+      "variables": {
+        "fqdn": {
+          "description": "Fully Qualified Domain Name (FQDN) e.g. of a mock server or an API gateway routing to MX API load balancer",
+          "default": "https://demo.s4c.murex.com/mocks"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "MX User Trade Views",
+      "description": "Retrieve list of trades matching filtering criteria.\n\nGiven a list of trades in MX, several sets of fields can be retrieved. This perspective on a list of trades is a `trade-view`.\nThe trades returned in a `trade-view` can be filtered on the fields available in the `trade-view`, or on additional trade properties independent from the `trade-view` definition.\n"
+    },
+    {
+      "name": "Client Trade Views",
+      "description": "Retrieve list of trades matching filtering criteria, enforcing filtering by counterparty: to limit the risk of leaking client data in client servicing use cases, when interacting with the API through a \"technical\"/service account user.\n\nGiven a list of trades in MX, several sets of fields can be retrieved. This perspective on a list of trades is a `trade-view`.\nThe trades returned in a `trade-view` can be filtered on the fields available in the `trade-view`, or on additional trade properties independent from the `trade-view` definition.\n"
+    }
+  ],
+  "externalDocs": {
+    "description": "API Deployment & Configuration",
+    "url": "https://docs.murex.com/pages/findpage?docid=24852"
+  },
+  "paths": {
+    "/trade-views": {
+      "get": {
+        "operationId": "getViews",
+        "x-has-authority": "api.trade-blotter.trade-views::read",
+        "summary": "Get Views",
+        "description": "Retrieve the list of available `trade-views`, ordered alphabetically.\n",
+        "tags": [
+          "MX User Trade Views"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of views",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tradeViews": {
+                      "description": "List of Views",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/viewCore"
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Views": {
+                    "$ref": "#/components/examples/Views"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/trade-views/{viewId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/viewId"
+        }
+      ],
+      "get": {
+        "operationId": "getView",
+        "x-has-authority": "api.trade-blotter.trade-views::read",
+        "summary": "Get View Details & Data",
+        "tags": [
+          "MX User Trade Views"
+        ],
+        "description": "\nA `trade-view` returns a list of trades as a table, with a list of properties (`fields`). The available fields for a given `trade-view` are defined through server-side configuration.\n\nEach `trade-view` can return a different set of fields. The definition of the returned fields (name, type) is part of the response.\n\n**How to define the set of fields returned by a trade-view**:\n  * Refer to MX official docs\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/includeSchema"
+          },
+          {
+            "$ref": "#/components/parameters/tradeViewSpecificParams"
+          },
+          {
+            "in": "query",
+            "name": "internalDealPerspective",
+            "description": "\"Internal Deals\" are trades booked from portfolio to portfolio. They are represented as two identical rows except for the \"Counterparty\" and \"Portfolio\", which are inverted. Internal Deals can be identified by an \"Internal\" column.\n\n`internalDealPerspective` allows returning a single row (a single perspective) for those internal deals:\n\n* that of the initiator (INITIATOR). Those are the deals which are returned in the trade blotter screen without filtering.\n* that of the beneficiary (BENEFICIARY). From the trade blotter screen in MX, this can be\n\nIt does not impact the visibility of non-internal deals.\n\nIf unset, the two perspective are returned (two almost identical rows per internal deal)\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "INITIATOR",
+                "BENEFICIARY"
+              ]
+            },
+            "example": "INITIATOR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/viewCore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/viewDetailsExtension"
+                    }
+                  ]
+                },
+                "examples": {
+                  "ViewDetails": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "When the number of returned entries is lower than the total number of entries for this search Then a snapshot of the target set of data is taken And we are redirected to an endpoint allowing to browse this snapshot.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "example": "/v1/api/trade-blotter/trade-views/44a30c97-a4c1-407e-8293-ecafd163e299/snapshots/6694670a-ec10-416f-a78c-696645f0c477"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404-NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/trade-views/{viewId}/snapshots/{snapshotId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/viewId"
+        },
+        {
+          "$ref": "#/components/parameters/snapshotId"
+        }
+      ],
+      "get": {
+        "operationId": "getViewSnapshot",
+        "x-has-authority": "api.trade-blotter.trade-views::read",
+        "summary": "Browse Snapshot",
+        "tags": [
+          "MX User Trade Views"
+        ],
+        "description": "When data from a view contains more than the maximum number of rows supported by the server, then a snapshot of the searched data is taken.\n\nThe dataset can be browse through this endpoint.\n\nIt is short lived: the snapshot will be purged after a certain Time To Live (TTL).\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/includeSchema"
+          },
+          {
+            "$ref": "#/components/parameters/tradeViewSpecificParams"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max number of results which will be returned.\n",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 10000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/viewSnapshot"
+                },
+                "examples": {
+                  "ViewSnapshot": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404-NotFound"
+          },
+          "410": {
+            "x-summary": "Gone",
+            "description": "Target snapshot does not exist anymore - its TTL likely expired.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errors"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/client-trade-views": {
+      "get": {
+        "operationId": "getClientViews",
+        "summary": "Get Views",
+        "x-has-authority": "api.trade-blotter.client-trade-views::read",
+        "description": "Retrieve the list of available `trade-views`, ordered alphabetically.\n",
+        "tags": [
+          "Client Trade Views"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of views",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tradeViews": {
+                      "description": "List of Trade Views",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/viewCore"
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Views": {
+                    "$ref": "#/components/examples/Views"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/client-trade-views/{viewId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/viewId"
+        }
+      ],
+      "get": {
+        "operationId": "getClientView",
+        "summary": "Get View Details & Data",
+        "x-has-authority": "api.trade-blotter.client-trade-views::read",
+        "tags": [
+          "Client Trade Views"
+        ],
+        "description": "A `trade-view` returns a list of trades as a table, with a list of properties (`fields`). The available fields for a given `trade-view` are defined through server-side configuration.\nEach `trade-view` can return a different set of fields. The definition of the returned fields (name, type) is part of the response.\n\n**How to define the set of fields returned by a trade-view**:\n  * Refer to MX official docs\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/counterparties_required"
+          },
+          {
+            "$ref": "#/components/parameters/includeSchema"
+          },
+          {
+            "$ref": "#/components/parameters/tradeViewSpecificParams"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/viewCore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/viewDetailsExtension"
+                    }
+                  ]
+                },
+                "examples": {
+                  "ViewDetails": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "When the number of returned entries is lower than the total number of entries for this search Then a snapshot of the target set of data is taken And we are redirected to an endpoint allowing to browse this snapshot.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "example": "/v1/api/trade-blotter/trade-views/44a30c97-a4c1-407e-8293-ecafd163e299/snapshots/6694670a-ec10-416f-a78c-696645f0c477"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404-NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/client-trade-views/{viewId}/snapshots/{snapshotId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/viewId"
+        },
+        {
+          "$ref": "#/components/parameters/snapshotId"
+        }
+      ],
+      "get": {
+        "operationId": "getClientViewSnapshot",
+        "summary": "Browse Snapshot",
+        "x-has-authority": "api.trade-blotter.client-trade-views::read",
+        "tags": [
+          "Client Trade Views"
+        ],
+        "description": "When data from a view contains more than the maximum number of rows supported by the server, then a snapshot of the searched data is taken.\n\nThe dataset can be browse through this endpoint.\n\nIt is short lived: the snapshot will be purged after a certain Time To Live (TTL).\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/includeSchema"
+          },
+          {
+            "$ref": "#/components/parameters/tradeViewSpecificParams"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max number of results which will be returned.\n",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 10000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/viewSnapshot"
+                },
+                "examples": {
+                  "ViewSnapshot": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404-NotFound"
+          },
+          "410": {
+            "x-summary": "Gone",
+            "description": "The target snapshot does not exist anymore - its TTL likely expired.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errors"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/trade-views/{viewId}/search": {
+      "parameters": [
+        {
+          "name": "viewId",
+          "description": "Target View",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "postViewSearch",
+        "x-has-authority": "api.trade-blotter.trade-views::read",
+        "summary": "Advanced search View Details & Data",
+        "description": "Get the description of a given view :\n* `field`: containing all fields of the view (breakdowns and outputs)\n* `primaryKey`: ids of the breakdowns in the view.\n\nHidden outputs and hidden breakdowns are not included in the details of the view.\n",
+        "tags": [
+          "MX User Trade Views"
+        ],
+        "requestBody": {
+          "description": "Search criteria",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "internalDealPerspective": {
+                    "description": "\"Internal Deals\" are trades booked from portfolio to portfolio. They are represented as two identical rows except for the \"Counterparty\" and \"Portfolio\", which are inverted. Internal Deals can be identified by an \"Internal\" column.\n\n`internalDealPerspective` allows returning a single row (a single perspective) for those internal deals:\n\n* that of the initiator (INITIATOR). Those are the deals which are returned in the trade blotter screen without filtering.\n* that of the beneficiary (BENEFICIARY). From the trade blotter screen in MX, this can be retrieved by filtering on the target portfolio (this is the only way to see this row in the trade blotter *MX screen*).\n\nIt does not impact the visibility of non-internal deals.\n\nIf unset, the two perspective are returned (two almost identical rows per internal deal)\n",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "INITIATOR",
+                      "BENEFICIARY"
+                    ]
+                  },
+                  "insertedOrModifiedBySelf": {
+                    "description": "Only returns deals insert or modified by currently authenticated user.\n\n`\"insertedOrModifiedBySelf\": true` is equivalent to `(GENERIC_VIEW.User OR GENERIC_VIEW.LastEventUser) == <current_user>`\n",
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "bookedOrAmendedDate": {
+                    "$ref": "#/components/schemas/bookedOrAmendedDate"
+                  },
+                  "columnValues": {
+                    "$ref": "#/components/schemas/columnValues"
+                  }
+                }
+              },
+              "examples": {
+                "SimpleFilter": {
+                  "$ref": "#/components/examples/trade-view-search"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/viewCore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/viewDetailsExtension"
+                    }
+                  ]
+                },
+                "examples": {
+                  "ViewDetails": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "When the number of returned entries is lower than the total number of entries for this search Then a snapshot of the target set of data is taken And we are redirected to an endpoint allowing to browse this snapshot.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "example": "/v1/api/trade-blotter/trade-views/44a30c97-a4c1-407e-8293-ecafd163e299/snapshots/6694670a-ec10-416f-a78c-696645f0c477"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    },
+    "/client-trade-views/{viewId}/search": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/viewId"
+        }
+      ],
+      "post": {
+        "x-has-authority": "api.trade-blotter.client-trade-views::read",
+        "operationId": "postClientViewSearch",
+        "summary": "Advanced search View Details & Data",
+        "description": "Get the description of a given view :\n* `field`: containing all fields of the view (breakdowns and outputs)\n* `primaryKey`: ids of the breakdowns in the view.\n\nHidden outputs and hidden breakdowns are not included in the details of the view.\n",
+        "tags": [
+          "Client Trade Views"
+        ],
+        "requestBody": {
+          "description": "Search criteria",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "counterparties": {
+                    "description": "Non-empty list of counterparts\n\n* in case of `clients` perspective the developer is expected to perform externally the mapping\n* in case of `sales` we expect a native way to declare the scope of visibility (authorization) and this will be leveraged seamlessly\n",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "example": [
+                      "COUNTERPARTY A"
+                    ]
+                  },
+                  "bookedOrAmendedDate": {
+                    "$ref": "#/components/schemas/bookedOrAmendedDate"
+                  },
+                  "columnValues": {
+                    "$ref": "#/components/schemas/columnValues"
+                  }
+                }
+              },
+              "examples": {
+                "SimpleFilter": {
+                  "$ref": "#/components/examples/client-trade-view-search"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Description of a view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/viewCore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/viewDetailsExtension"
+                    }
+                  ]
+                },
+                "examples": {
+                  "ViewDetails": {
+                    "$ref": "#/components/examples/View"
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "When the number of returned entries is lower than the total number of entries for this search Then a snapshot of the target set of data is taken And we are redirected to an endpoint allowing to browse this snapshot.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "example": "/v1/api/trade-blotter/trade-views/44a30c97-a4c1-407e-8293-ecafd163e299/snapshots/6694670a-ec10-416f-a78c-696645f0c477"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401-Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403-Forbidden"
+          },
+          "default": {
+            "$ref": "#/components/responses/500-ISE"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "description": "MX API are secured with a bearer token following JWT.\nFor more information about how to obtain an access token check /authorize and /token of the [Auth API](https://developer.murex.com/apis/auth/documentation).\n",
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Errors": {
+        "description": "List of errors defined following https://jsonapi.org/format/1.1/#errors",
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "An array of error objects, each representing a specific error that occurred during the request.\nEach error object contains details about the error, including a code, title, detail, and status.\n",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "title"
+              ],
+              "properties": {
+                "code": {
+                  "description": "MX catalog error code",
+                  "type": "string",
+                  "examples": [
+                    "MX-ERROR-CATALOG-CODE-0"
+                  ]
+                },
+                "title": {
+                  "description": "A short, human-readable summary of the problem type (should not change from occurrence to occurrence of the\nproblem).\n",
+                  "type": "string",
+                  "example": "Service Unavailable"
+                },
+                "detail": {
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "type": "string",
+                  "example": ""
+                },
+                "status": {
+                  "description": "The HTTP status code generated by the origin server for this occurrence\nof the problem.\n",
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 400,
+                  "exclusiveMaximum": 600,
+                  "examples": [
+                    503
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "viewCore": {
+        "type": "object",
+        "description": "Core View schema, It contains the essential properties of a view, such as its ID, label, and description.\n",
+        "properties": {
+          "id": {
+            "description": "Unique identifier of the View, used to reference the view in API calls.\n",
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "description": "Label of the View - a short name to refer to a view\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "User friendly description of the View\n"
+          }
+        }
+      },
+      "viewDetailsExtension": {
+        "type": "object",
+        "description": "A snapshot of a View, including metadata about the view, schema of the data, and the data itself (paginated).\n",
+        "properties": {
+          "staleDataTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "If set, indicates that the data is stale. It is guaranteed to represent the actual data state at the provided timestamp.\n\nData updates may or may not have occurred since this timestamp.\n\n**Service maintenance is required for the data to be un-staled**; check the service documentation.\n"
+          },
+          "limit": {
+            "type": "number",
+            "description": "The maximum number of rows supported by the server to return in one response\n"
+          },
+          "total": {
+            "type": "number",
+            "description": "The actual total number of trades that the query can return. When the number of total is bigger than the number of limit, pagination will be triggered. The dataset can be browsed through the endpoint to browse snapshot.\n"
+          },
+          "schema": {
+            "type": "object",
+            "description": "Schema describing the structure of the data in the snapshot",
+            "properties": {
+              "fields": {
+                "description": "array of field definitions",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "description": "Name of the field, used to reference the field in filtering",
+                      "type": "string"
+                    },
+                    "title": {
+                      "description": "short description of the field",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "type of the field, non-summable fields cannot be aggregated like date",
+                      "type": "string",
+                      "enum": [
+                        "string",
+                        "number",
+                        "date"
+                      ]
+                    }
+                  }
+                }
+              },
+              "primaryKey": {
+                "description": "List of fields that are used as primary key for the view",
+                "type": "array",
+                "items": {
+                  "description": "identifier (name) of the field.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "data": {
+            "type": "array",
+            "description": "Array of data rows, each row is a dictionary of field name to value",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "paginationChunk": {
+        "description": "Metadata describing the current pagination of the result",
+        "type": "object",
+        "readOnly": true,
+        "properties": {
+          "offset": {
+            "description": "Number of items to skip before starting to collect the result set",
+            "type": "number"
+          },
+          "limit": {
+            "description": "Limit of items returned in the current response",
+            "type": "number"
+          },
+          "total": {
+            "description": "Total number of items available (without pagination)",
+            "type": "number"
+          }
+        }
+      },
+      "viewSnapshot": {
+        "description": "A snapshot of a View, including metadata about the view, schema of the data, and the data itself (paginated).\n",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/paginationChunk"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier of the View, used to reference the view in API calls.\n"
+              },
+              "label": {
+                "type": "string",
+                "description": "Label of the View - a short name to refer to a view\n"
+              },
+              "description": {
+                "type": "string",
+                "description": "User friendly description of the View\n"
+              },
+              "snapshotId": {
+                "type": "string",
+                "description": "Id of the \"snapshot\" for this data query, for further browsing. The Time To Live (TTL) for a snapshot is by default 5 mins (configurable in trade blotter configuration)\n"
+              },
+              "schema": {
+                "type": "object",
+                "description": "Schema describing the structure of the data in the snapshot",
+                "properties": {
+                  "fields": {
+                    "type": "array",
+                    "description": "List of fields in the View, including their metadata.\n",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "description": "Name of the field, used to reference the field in filtering",
+                          "type": "string"
+                        },
+                        "title": {
+                          "description": "Human-readable title of the field",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "type of the field, non-summable fields cannot be aggregated like date",
+                          "type": "string",
+                          "enum": [
+                            "string",
+                            "number",
+                            "non-summable"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "primaryKey": {
+                    "type": "array",
+                    "description": "List of fields that are used as primary key for the view",
+                    "items": {
+                      "description": "Identifier (name) of the field.",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "type": "array",
+                "description": "Array of data rows, each row is a dictionary of field name to value",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "dateOrToday": {
+        "description": "Date following the format YYYY-MM-DD or the constant TODAY",
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date",
+            "description": "Date in the format YYYY-MM-DD"
+          },
+          {
+            "type": "string",
+            "const": "TODAY",
+            "description": "TODAY is resolved as the current FO Desk Date of the User accessing the API. (according to the access token)."
+          }
+        ]
+      },
+      "bookedOrAmendedDate": {
+        "description": "* `bookedOrAmendedDate` filters on `(GENERIC_VIEW.TradeDate OR GENERIC_VIEW.LastEventDate)`. The same filters as for the `columnValues` are available\n* to support a date range, have 2 elements in the array, with “le/lt/ge/gt” as operator, instead of “in”\n* there is no consistency check: all criteria from the array are applied even if mutually excluding. If nothing is return, the search criteria need to be adjusted\n* \"in\": [\"a\"] is equivalent to \"eq\": \"a\"\n* examples of filter for various needs:\n  * `{\"bookedOrAmendedDate\": [{\"in\": [\"TODAY\"]}]}`: filters out trade insertion as of past date so there cannot be past PL impact here.\n  * `{ \"bookedOrAmendedDate\": [{\"in\": [\"TODAY\"]}], columnValues:[{\"field\": \"EffectiveTradeDate\", \"eq\": \"TODAY\"}]}` to exclude late trading ( late trading date = Today +1OD)\n  * `{ \"bookedOrAmendedDate\": [{\"in\": [\"2021-10-10\"]}], columnValues:[{\"field\": \"EffectiveTradeDate\", \"eq\": \"TODAY\"}]}` to spot past corrections that contribute to the PL only today\n  * `{\"columnValues\":[{\"field\": \"InsertionDate\", \"eq\": \"TODAY\"}]}` to return all trades technically inserted today (regardless of the trade date and effective trade date), even those who may impact past PL.\n  * `{\"columnValues\":[{\"field\": \"InsertionDate\", \"eq\": \"TODAY\"}, {\"field\": \"EffectiveTradeDate\", \"eq\": \"TODAY\"}]}` to return all trades technically inserted today (regardless of the trade date and effective trade date), excluding those impacting past PL.\n",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "description": "In operator",
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/dateOrToday"
+              }
+            },
+            "nin": {
+              "description": "Not in operator",
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/dateOrToday"
+              }
+            },
+            "eq": {
+              "description": "Equal operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            },
+            "neq": {
+              "description": "Not equal operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            },
+            "lt": {
+              "description": "Less than operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            },
+            "gt": {
+              "description": "Greater than operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            },
+            "le": {
+              "description": "Less than or equal operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            },
+            "ge": {
+              "description": "Greater than or equal operator",
+              "$ref": "#/components/schemas/dateOrToday"
+            }
+          }
+        }
+      },
+      "operatorArray": {
+        "description": "Values matching the operator, applies for array filters (in, not in)\n",
+        "type": "array",
+        "items": {
+          "description": "Values matching the operator, applies for array filters",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "operator": {
+        "description": "Value for matching the operator, applies for single value filters (eq, neq, le, lt, ge, gt)",
+        "type": [
+          "string",
+          "number",
+          "null"
+        ]
+      },
+      "columnValues": {
+        "description": "List of filtering criteria per column:\n * several filters can be applied on the same column\n * the API looks for the results where all criteria match (intersection / AND clause)\n * if a field from the view is of type \"date\", then `TODAY` can be used as a valid value ; api interprets it as the logged in users FO Desk Date\n * for \"in\", \"nin\", the elements of operator array can accept null only for date field \n * for \"eq\", \"neq\", the operator can accept null only for date field\n * for \"le\", \"lt\", \"ge\", \"gt\", the operator cannot accept null\n",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "field"
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "properties": {
+            "field": {
+              "type": "string",
+              "description": "Label of the parameter to filter on. The parameter must exist in the `filter` referenced by the `filterId`.\n"
+            },
+            "in": {
+              "$ref": "#/components/schemas/operatorArray"
+            },
+            "nin": {
+              "$ref": "#/components/schemas/operatorArray"
+            },
+            "eq": {
+              "$ref": "#/components/schemas/operator"
+            },
+            "neq": {
+              "$ref": "#/components/schemas/operator"
+            },
+            "le": {
+              "$ref": "#/components/schemas/operator"
+            },
+            "lt": {
+              "$ref": "#/components/schemas/operator"
+            },
+            "ge": {
+              "$ref": "#/components/schemas/operator"
+            },
+            "gt": {
+              "$ref": "#/components/schemas/operator"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "500-ISE": {
+        "x-summary": "Internal Server Error",
+        "description": "Internal Server Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "examples": {
+              "unauthorized": {
+                "summary": "Internal Server Error.",
+                "value": {
+                  "errors": [
+                    {
+                      "code": "MX-ERROR-CATALOG-CODE-0",
+                      "title": "Internal Server Error",
+                      "status": 500
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "401-Unauthorized": {
+        "x-summary": "Unauthorized",
+        "description": "Unauthorized - Authentication is required.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "examples": {
+              "unauthorized": {
+                "summary": "Unauthorized - Authentication is required.",
+                "value": {
+                  "errors": [
+                    {
+                      "code": "MX-ERROR-CATALOG-CODE-1",
+                      "title": "Unauthorized",
+                      "detail": "Authentication is required.",
+                      "status": 401
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "403-Forbidden": {
+        "x-summary": "Forbidden",
+        "description": "Forbidden - User does not have permission to perform this action.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "examples": {
+              "unauthorized": {
+                "summary": "Forbidden - User does not have permission to perform this action.",
+                "value": {
+                  "errors": [
+                    {
+                      "code": "MX-ERROR-CATALOG-CODE-1",
+                      "title": "Forbidden",
+                      "detail": "User does not have permission to perform this action.",
+                      "status": 403
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "404-NotFound": {
+        "x-summary": "Not Found",
+        "description": "Target URL or object does not exist.\nThis status may also be returned if the user does not have the permissions to access the target resource, to prevent discovering whether a given resource exists or not.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Errors"
+            },
+            "examples": {
+              "notFound": {
+                "summary": "Target URL or object does not exist.",
+                "value": {
+                  "errors": [
+                    {
+                      "code": "MX-ERROR-CATALOG-CODE-1",
+                      "title": "Target URL or object does not exist.",
+                      "detail": "Target URL or object does not exist.",
+                      "status": 404
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "examples": {
+      "Views": {
+        "description": "List of views",
+        "value": {
+          "tradeViews": [
+            {
+              "id": "44a30c97-a4c1-407e-8293-ecafd163e299",
+              "label": "Daily Basic",
+              "description": "User friendly description for Daily Basic"
+            },
+            {
+              "id": "6d2a8328-0d53-40dd-bfc2-77802672eca8",
+              "label": "Daily Detailed",
+              "description": "User friendly description for Daily Detailed"
+            },
+            {
+              "id": "95c14eb5-034f-4b81-90c0-9c44b12d74b1",
+              "label": "Live Basic",
+              "description": "User friendly description for Live Basic"
+            },
+            {
+              "id": "7843c17a-e1d7-4135-831a-90b421b3d469",
+              "label": "Live Detailed",
+              "description": "User friendly description for Live Detailed"
+            }
+          ]
+        }
+      },
+      "View": {
+        "description": "Details on the selected view - restricted to the description of the columns (order, name, type)\nretrieved through this view, and the \"primary keys\" allowing uniquely identifying a row (**note**:\nsome primary keys might be hidden on screen).\n",
+        "value": {
+          "id": "44a30c97-a4c1-407e-8293-ecafd163e299",
+          "label": "Daily Basic",
+          "description": "User friendly description for Daily Basic View",
+          "staleDataTimestamp": "2022-10-20T15:32:12.124Z",
+          "schema": {
+            "fields": [
+              {
+                "name": "BrokerFeeCcy",
+                "title": "BrokerFeeCcy",
+                "type": "string"
+              },
+              {
+                "name": "ContractTypology",
+                "type": "string"
+              },
+              {
+                "name": "Counterpart",
+                "type": "string"
+              },
+              {
+                "name": "FaceAmount",
+                "type": "number"
+              },
+              {
+                "name": "FaceCcy",
+                "type": "string"
+              },
+              {
+                "name": "GlobalID",
+                "type": "string"
+              },
+              {
+                "name": "Instrument",
+                "type": "string"
+              },
+              {
+                "name": "InternalStatus",
+                "type": "number"
+              },
+              {
+                "name": "LiveStatus",
+                "type": "string"
+              },
+              {
+                "name": "MarginAmount",
+                "type": "number"
+              },
+              {
+                "name": "Maturity",
+                "type": "number"
+              },
+              {
+                "name": "NetPriceOrRate",
+                "type": "number"
+              },
+              {
+                "name": "NominalCcy",
+                "type": "string"
+              },
+              {
+                "name": "OtherCcy",
+                "type": "string"
+              },
+              {
+                "name": "OtherNominal",
+                "type": "number"
+              },
+              {
+                "name": "Portfolio",
+                "type": "string"
+              },
+              {
+                "name": "Price",
+                "type": "number"
+              },
+              {
+                "name": "SalesUser",
+                "type": "number"
+              },
+              {
+                "name": "Typology",
+                "type": "number"
+              },
+              {
+                "name": "User",
+                "type": "string"
+              },
+              {
+                "name": "ValidationLevel",
+                "type": "string"
+              }
+            ],
+            "primaryKey": [
+              "GlobalID",
+              "Instrument",
+              "ContractTypology",
+              "Counterpart",
+              "FaceCcy"
+            ]
+          },
+          "data": [
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Spot",
+              "Counterpart": "COMPANY B",
+              "FaceAmount": -300000,
+              "FaceCcy": "EUR",
+              "GlobalID": "",
+              "Instrument": "EUR/USD",
+              "InternalStatus": "Ins",
+              "LiveStatus": "MKT_OP",
+              "MarginAmount": 360,
+              "Maturity": "09/10/2020",
+              "NetPriceOrRate": 1.1759,
+              "NominalCcy": "",
+              "OtherCcy": "USD",
+              "OtherNominal": 352770,
+              "Portfolio": "FX AVERAGING",
+              "Price": 1.1747,
+              "SalesUser": "",
+              "Typology": "Spot",
+              "User": "MUREXFO",
+              "ValidationLevel": "EventPending"
+            },
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Spot",
+              "Counterpart": "COMPANY B",
+              "FaceAmount": -300000,
+              "FaceCcy": "EUR",
+              "GlobalID": "",
+              "Instrument": "EUR/USD",
+              "InternalStatus": "Cncl",
+              "LiveStatus": "DEAD",
+              "MarginAmount": 360,
+              "Maturity": "09/10/2020",
+              "NetPriceOrRate": 1.1759,
+              "NominalCcy": "",
+              "OtherCcy": "USD",
+              "OtherNominal": 352770,
+              "Portfolio": "FX AVERAGING",
+              "Price": 1.1747,
+              "SalesUser": "",
+              "Typology": "Spot",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Future COM",
+              "Counterpart": "BMFBOVESPA SA",
+              "FaceAmount": 100,
+              "FaceCcy": "",
+              "GlobalID": "",
+              "Instrument": "DE_BS_PHY_EEX",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "03/01/2022",
+              "NetPriceOrRate": 0,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "MX_PTF",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "Future COM",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Future COM",
+              "Counterpart": "BMFBOVESPA SA",
+              "FaceAmount": 1000,
+              "FaceCcy": "",
+              "GlobalID": "",
+              "Instrument": "NG MINI NMX",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "28/10/2020",
+              "NetPriceOrRate": 2.931,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "MX_PTF",
+              "Price": 2.931,
+              "SalesUser": "",
+              "Typology": "Future COM",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "USD",
+              "ContractTypology": "IRS",
+              "Counterpart": "LCH - SWAP CLEAR",
+              "FaceAmount": 1000000,
+              "FaceCcy": "USD",
+              "GlobalID": "",
+              "Instrument": "USD LIBOR S 3M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "09/10/2040",
+              "NetPriceOrRate": 1.12002234,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "FI_GOVIES_G20",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "IRS",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "USD",
+              "ContractTypology": "IRS",
+              "Counterpart": "COMPANY A",
+              "FaceAmount": 1000000,
+              "FaceCcy": "USD",
+              "GlobalID": "",
+              "Instrument": "USD LIBOR S 3M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 5400,
+              "Maturity": "09/10/2030",
+              "NetPriceOrRate": 0.688756,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "IRD LINEAR USD",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "IRS",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "USD",
+              "ContractTypology": "IRS",
+              "Counterpart": "LCH - SWAP CLEAR",
+              "FaceAmount": 1000000,
+              "FaceCcy": "USD",
+              "GlobalID": "",
+              "Instrument": "USD LIBOR S 3M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "09/10/2025",
+              "NetPriceOrRate": 0.41539407,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "FI_GOVIES_G20",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "IRS",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "USD",
+              "ContractTypology": "IRS",
+              "Counterpart": "COMPANY A",
+              "FaceAmount": 1000000,
+              "FaceCcy": "USD",
+              "GlobalID": "",
+              "Instrument": "USD LIBOR S 3M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 1651.53,
+              "Maturity": "09/10/2023",
+              "NetPriceOrRate": 0.2343658,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "IRD LINEAR USD",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "IRS",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Swaption European",
+              "Counterpart": "BARCLAYS BANK",
+              "FaceAmount": 10000000,
+              "FaceCcy": "EUR",
+              "GlobalID": "",
+              "Instrument": "EURIBOR A 6M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "07/10/2022",
+              "NetPriceOrRate": 0,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "MX_PTF",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "Swaption European",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            },
+            {
+              "BrokerFeeCcy": "",
+              "ContractTypology": "Swaption European",
+              "Counterpart": "BARCLAYS BANK",
+              "FaceAmount": 10000000,
+              "FaceCcy": "EUR",
+              "GlobalID": "",
+              "Instrument": "EURIBOR A 6M",
+              "InternalStatus": "Ins",
+              "LiveStatus": "LIVE",
+              "MarginAmount": 0,
+              "Maturity": "07/10/2022",
+              "NetPriceOrRate": 0,
+              "NominalCcy": "",
+              "OtherCcy": "",
+              "OtherNominal": 0,
+              "Portfolio": "MX_PTF",
+              "Price": 0,
+              "SalesUser": "",
+              "Typology": "Swaption European",
+              "User": "MUREXFO",
+              "ValidationLevel": "MxDefault"
+            }
+          ]
+        }
+      },
+      "trade-view-search": {
+        "description": "A complex search request:\n  * deals in portfolio MX_PTF1 or MX_PTF2\n  * inserted or modified by current user\n  * booked or amended exactly TODAY (FO Desk Date) or on 2022-12-12\n",
+        "value": {
+          "internalDealPerspective": "INITIATOR",
+          "insertedOrModifiedBySelf": true,
+          "bookedOrAmendedDate": [
+            {
+              "in": [
+                "TODAY",
+                "2022-12-12"
+              ]
+            }
+          ],
+          "columnValues": [
+            {
+              "field": "counterpart",
+              "in": [
+                "BANK A",
+                "BANK B"
+              ]
+            },
+            {
+              "field": "Contract Id",
+              "eq": "123456789"
+            },
+            {
+              "field": "Status",
+              "in": [
+                "LIVE",
+                "MKT_OP",
+                "DEAD"
+              ]
+            },
+            {
+              "field": "InsertionDate",
+              "le": "2023-01-06"
+            },
+            {
+              "field": "InsertionDate",
+              "ge": "2022-11-06"
+            }
+          ]
+        }
+      },
+      "client-trade-view-search": {
+        "description": "Client Trade View Advanced Request Sample",
+        "value": {
+          "counterparties": [
+            "BANK A",
+            "BANK B"
+          ],
+          "bookedOrAmendedDate": [
+            {
+              "in": [
+                "TODAY",
+                "2022-12-12"
+              ]
+            }
+          ],
+          "columnValues": [
+            {
+              "field": "counterpart",
+              "in": [
+                "BANK A",
+                "BANK B"
+              ]
+            },
+            {
+              "field": "Contract Id",
+              "eq": "123456789"
+            },
+            {
+              "field": "Status",
+              "in": [
+                "LIVE",
+                "MKT_OP",
+                "DEAD"
+              ]
+            },
+            {
+              "field": "InsertionDate",
+              "le": "2023-01-06"
+            },
+            {
+              "field": "InsertionDate",
+              "ge": "2022-11-06"
+            }
+          ]
+        }
+      }
+    },
+    "parameters": {
+      "viewId": {
+        "name": "viewId",
+        "description": "Target View",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "includeSchema": {
+        "in": "query",
+        "name": "includeSchema",
+        "description": "Set to false to only return the data, without the schema (column description)\n",
+        "schema": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "tradeViewSpecificParams": {
+        "in": "query",
+        "name": "tradeViewSpecificParams",
+        "description": "Each field from the `trade-view` can be filtered on, unless specified otherwise in the field description.\n\nThe name `tradeViewSpecificParams` is not part of the API contract, is it a logical name to group in the documentation those parameters whose name is configuration-dependent.\n\n\nIt is only possible to filter on fields available in the view.\n\n\n* For each parameter, several values can be passed (each query parameter on a field name is an `array` of the field's type). The returned results contain entries having at least one of the values from the query parameter, e.g.:\n  * `?counterparty=BANK A&counterparty=BANK B` returns all deals having counterparty `BANK A` **or** counterparty `BANK B`\n\n* filtering on different parameters (e.g. status and counterparty) will return deals matching at least one value from each parameter, e.g.:\n  * `?counterparty=BANK A&status=Ins` returns all deals having counterparty `BANK A` **and** status `Ins`\n  * `?counterparty=BANK A&counterparty=BANK B&status=Ins` returns all deals having (counterparty `BANK A` or `BANK B`) **and** (status `Ins`)\n\n\nBelow are commonly used fields and the corresponding entry in MX blotter dictionary - where to find them when creating the view as a configurator.\n\n\n\n|Field (final name is user defined)|Blotter dictionary entry under GENERIC_VIEW|Comment|\n|-----|-----|-----|\n| counterparties   | `Counterpart` ||\n| portfolios       | `Portfolio`  ||\n| status           | `InternalStatus`| ins, mod, cancl |\n| inserter         | `User` ||\n| Deal status      | `LiveStatus`   | Possible values: LIVE, MKT_OP, DEAD |\n| insertiondate    | `SystemDate`|This field of type date (format iso8601) also access `TODAY` as a valid value. `TODAY` is a keyword resolved MX side as the FO Desk Date of the current user, deduced from the FO Desk or Group used at login time.|\n| actualdate       | `EffectiveTradeDate` |This field of type date (format iso8601) also access `TODAY` as a valid value. `TODAY` is a keyword resolved MX side as the FO Desk Date of the current user, deduced from the FO Desk or Group used at login time.|\n| modificationdate | `ModificationDateTime` |Time of the latest event on the deal. This field of type date (format iso8601) also access `TODAY` as a valid value. `TODAY` is a keyword resolved MX side as the FO Desk Date of the current user, deduced from the FO Desk or Group used at login time.|\n| instrument       | `Instrument` ||\n| typology         | `Typology` ||\n| lastevent        | `LastEventClass` >> `Event Type` | Possible values: Amend, early take up, etc.|\n| lastevendate     | `LastEventDate` | |\n",
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "example": {
+          "ContractTypology": [
+            "Spot"
+          ],
+          "insertionDate": [
+            "2022-05-11"
+          ]
+        }
+      },
+      "snapshotId": {
+        "in": "path",
+        "name": "snapshotId",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Id of the snapshot for this data query.\nIf set, any filtering parameters are ignored\n"
+      },
+      "offset": {
+        "name": "offset",
+        "in": "query",
+        "description": "Used for pagination.\n* results are sent by chunks of `limit` entries.\n* if more than `limit` entries are available, then several requests will be needed to get all results.\n* given default `limit` size of 1000, page 1, 2..n are obtained by having `offset` = 0, 1000, 2000, etc. (i.e. for each page, offset == (page number - 1) * `limit`)\n* if offset > total number of results: 400 Error\n",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "counterparties_required": {
+        "in": "query",
+        "name": "counterparties",
+        "description": "Only retrieve trades whose counterparty is part of the input list. Possible values for the \"counterparty\" field are listed in the MX group chinese wall template.\n\nOnly views having a field name \"counterparties\" mapped to field `GENERIC_VIEW.Counterpart` from MX blotter dictionary can be used.\n\nIn case the `client-trade-views` endpoint is used with a view which does not contain the field properly mapped, an error will be thrown.\nAt configuration time, the availability of this field can be enforced.\n",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "COUNTERPARTY A",
+            "COUNTERPARTY B"
+          ]
+        }
+      }
+    }
+  },
+  "x-commit": "3771be32"
+}

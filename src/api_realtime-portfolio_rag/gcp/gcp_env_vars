@@ -3,7 +3,8 @@
 
 #  GENERATE KEY on GOOGLE PROJECT - under - https://aistudio.google.com/app/projects
 
-export GCP_PROJECT="
-export GEMINI_API_KEY="
+GCP_PROJECT="994479057274"
+GEMINI_API_KEY="AIzaSyD2kB48Ji_uahVF_m5AF5l8srnxFME4lyg"
 export GEMINI_INFERENCE_MODEL="gemini-3-flash-preview"
 export GEMINI_EMBEDDING_MODEL="models/gemini-embedding-001"
+
