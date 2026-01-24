@@ -23,6 +23,7 @@ DOCKER_CONTAINER_API = llama-local-datamap-rag-api-container
 
 help:
 	@echo "Available commands:"
+	@echo "  make load_data_files - Load data files"
 	@echo "  make build         - Build the Docker image"
 	@echo "  make run_all       - Run the Docker containers for the Streamlit app and the API"
 	@echo "  make run_streamlit - Run the Docker container for the Streamlit app"
@@ -32,6 +33,12 @@ help:
 	@echo "  make test          - Run tests"
 	@echo "  make lint          - Run linting"
 	@echo "  make help          - Show this help message"
+
+load_data_files:
+	@echo "Loading data files..."
+	cat ~/Desktop/API.txt > ./datamap/API_SAMPLE.txt
+	cat ~/Desktop/SWAGGER.json > ./datamap/SWAGGER_SAMPLE.json
+	@echo "Data files loaded successfully."
 
 build:
 	@echo "Building Docker image..."

@@ -1,246 +1,857 @@
-{
-  "openapi": "3.0.0",
-  "info": {
-    "title": "Realtime Portfolio API",
-    "version": "1.0.0",
-    "description": "Sample Swagger specification for local file-based learning."
-  },
-  "servers": [
-    {
-      "url": "http://localhost:8000",
-      "description": "Local development server"
-    }
-  ],
-  "paths": {
-    "/": {
-      "get": {
-        "summary": "Root endpoint returning API status",
-        "responses": {
-          "200": {
-            "description": "API status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/initialize": {
-      "post": {
-        "summary": "Initialize the analyzer",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "config": {
-                    "type": "object",
-                    "properties": {
-                      "api_base_url": {
-                        "type": "string"
-                      },
-                      "swagger_url": {
-                        "type": "string"
-                      },
-                      "region_name": {
-                        "type": "string"
-                      },
-                      "cache_size": {
-                        "type": "integer"
-                      },
-                      "pattern": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Analyzer initialized"
-          }
-        }
-      }
-    },
-    "/analyze": {
-      "post": {
-        "summary": "Analyze API specification",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  },
-                  "context": {
-                    "type": "string"
-                  },
-                  "format_type": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Analysis result"
-          }
-        }
-      }
-    },
-    "/api_call": {
-      "post": {
-        "summary": "Get API call example in context",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  },
-                  "context": {
-                    "type": "string"
-                  },
-                  "format_type": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "API call example"
-          }
-        }
-      }
-    },
-    "/similar": {
-      "post": {
-        "summary": "Get similar API endpoints",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  },
-                  "k": {
-                    "type": "integer"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Similarity results"
-          }
-        }
-      }
-    },
-    "/endpoint": {
-      "post": {
-        "summary": "Get endpoint specification",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "endpoint_path": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Endpoint specification"
-          }
-        }
-      }
-    },
-    "/parameter": {
-      "post": {
-        "summary": "Get parameter information",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "endpoint_path": {
-                    "type": "string"
-                  },
-                  "parameter_name": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Parameter details"
-          }
-        }
-      }
-    },
-    "/api_summary": {
-      "get": {
-        "summary": "Get API summary",
-        "responses": {
-          "200": {
-            "description": "API summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "total_endpoints": {
-                      "type": "integer"
-                    },
-                    "endpoints": {
-                      "type": "array",
-                      "items": {
-                        "type": "object"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
+openapi: 3.0.0
+info:
+  title: Cloud Services Risk Ratings API
+  description: API for retrieving cloud services risk ratings and related information
+  version: 1.0.0
 
+servers:
+  - url: /api/v1
+
+paths:
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/list/all/services:
+    get:
+      summary: Get all risk ratings (Freemium)
+      description: Retrieves a list of all cloud service risk ratings (limited to 100000 records)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BasicRiskRating'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/id/{id}:
+    get:
+      summary: Get risk rating by ID (Freemium)
+      description: Retrieves detailed risk rating information for a specific service by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_provider/{service_provider}:
+    get:
+      summary: Get risk rating by service provider (Freemium)
+      description: Retrieves detailed risk rating information for a specific service provider
+      parameters:
+        - name: service_provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_name/{service_name}:
+    get:
+      summary: Get risk rating by service name (Freemium)
+      description: Retrieves detailed risk rating information for a specific service name
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/fetch/service/service_name/{service_name}/global_or_by_regions/{global_or_by_regions}:
+    get:
+      summary: Get risk rating by service name and region type (Freemium)
+      description: Retrieves detailed risk rating information for a specific service name and region type (global or regional)
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: global_or_by_regions
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [global, regional]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '400':
+          description: Invalid global_or_by_regions parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/list/all:
+    get:
+      summary: Get all outage reports (Freemium)
+      description: Retrieves a list of all cloud service outage reports (limited to 100000 records)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/provider/{provider}:
+    get:
+      summary: Get outage reports by provider (Freemium)
+      description: Retrieves outage reports for a specific cloud provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/service/{service}:
+    get:
+      summary: Get outage reports by service (Freemium)
+      description: Retrieves outage reports for a specific cloud service
+      parameters:
+        - name: service
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/outages/region/{region}:
+    get:
+      summary: Get outage reports by region (Freemium)
+      description: Retrieves outage reports for a specific region
+      parameters:
+        - name: region
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/list/all/services:
+    get:
+      summary: Get all risk ratings (Premium)
+      description: Retrieves a list of all cloud service risk ratings with full details (limited to 100000 records)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetailedRiskRating'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/id/{id}:
+    get:
+      summary: Get risk rating by ID (Premium)
+      description: Retrieves detailed risk rating information for a specific service by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_provider/{service_provider}:
+    get:
+      summary: Get risk rating by service provider (Premium)
+      description: Retrieves detailed risk rating information for a specific service provider
+      parameters:
+        - name: service_provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_name/{service_name}:
+    get:
+      summary: Get risk rating by service name (Premium)
+      description: Retrieves detailed risk rating information for a specific service name
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetailedRiskRating'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/fetch/service/service_name/{service_name}/global_or_by_regions/{global_or_by_regions}:
+    get:
+      summary: Get risk rating by service name and region type (Premium)
+      description: Retrieves detailed risk rating information for a specific service name and region type
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: global_or_by_regions
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [global, regional]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedRiskRating'
+        '400':
+          description: Invalid global_or_by_regions parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Risk rating not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/list/all:
+    get:
+      summary: Get all outage reports (Premium)
+      description: Retrieves a list of all cloud service outage reports (limited to 100000 records)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/provider/{provider}:
+    get:
+      summary: Get outage reports by provider (Premium)
+      description: Retrieves outage reports for a specific cloud provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/service/{service}:
+    get:
+      summary: Get outage reports by service (Premium)
+      description: Retrieves outage reports for a specific cloud service
+      parameters:
+        - name: service
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/outages/region/{region}:
+    get:
+      summary: Get outage reports by region (Premium)
+      description: Retrieves outage reports for a specific region
+      parameters:
+        - name: region
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutageReport'
+        '404':
+          description: No outage reports found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/customers/list/all:
+    get:
+      summary: Get all customers (Freemium)
+      description: Retrieves a list of all customers for the freemium service
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FreemiumCustomer'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/customers/list/all:
+    get:
+      summary: Get all customers (Premium)
+      description: Retrieves a list of all customers for the premium service
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PremiumCustomer'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-freemium/freemium/customers/fetch/customer/{customer_id}:
+    get:
+      summary: Get customer by ID (Freemium)
+      description: Retrieves detailed customer information and their submissions for a specific customer ID
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FreemiumCustomerWithSubmissions'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cloud-services-risk-ratings/risk-ratings-premium/premium/customers/fetch/customer/{customer_id}:
+    get:
+      summary: Get customer by ID (Premium)
+      description: Retrieves detailed customer information and their submissions for a specific customer ID
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PremiumCustomerWithSubmissions'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    BasicRiskRating:
+      type: object
+      properties:
+        database_key_id:
+          type: string
+        service_name:
+          type: string
+        service_provider:
+          type: string
+        global_or_by_regions:
+          type: string
+        region:
+          type: string
+
+    DetailedRiskRating:
+      type: object
+      properties:
+        database_key_id:
+          type: string
+        service_name:
+          type: string
+        service_provider:
+          type: string
+        global_or_by_regions:
+          type: string
+        region:
+          type: string
+        service_sla_0_99_9999_for_tier1:
+          type: number
+        service_sla_0_99_9999_for_tier2:
+          type: number
+        service_sla_0_99_9999_for_tier3:
+          type: number
+        service_sla_0_99_9999_for_tier4:
+          type: number
+        percentage_service_credit_back_tier1:
+          type: number
+        percentage_service_credit_back_tier2:
+          type: number
+        percentage_service_credit_back_tier3:
+          type: number
+        percentage_service_credit_back_tier4:
+          type: number
+        expected_annual_service_minutes_down_by_sla_tier1:
+          type: number
+        expected_annual_service_minutes_down_by_sla_tier2:
+          type: number
+        expected_annual_service_minutes_down_by_sla_tier3:
+          type: number
+        expected_annual_service_minutes_down_by_sla_tier4:
+          type: number
+        expected_percentage_mins_down_inside_agreed_sla_tier1:
+          type: number
+        webscraper_annual_period_service_down_per_year_in_minutes:
+          type: number
+        expected_percentage_mins_down_on_agreed_sla:
+          type: number
+        actual_percentage_total_mins_down_from_webscraping:
+          type: number
+        service_sla_usage_percentage:
+          type: number
+        service_traffic_coef_by_percent_down:
+          type: number
+        sla_deviation_connected_risk_0_999:
+          type: number
+        usage_connected_risk_0_999:
+          type: number
+        annual_outage_time_days_hours_mins:
+          type: string
+        remarks_outage_genai:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    OutageReport:
+      type: object
+      properties:
+        provider:
+          type: string
+        service:
+          type: string
+        region:
+          type: string
+        outage_start_time:
+          type: string
+        outage_end_time:
+          type: string
+        outage_duration:
+          type: number
+        outage_reason:
+          type: string
+    FreemiumCustomer:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        customername:
+          type: string
+        company:
+          type: string
+        country:
+          type: string
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PremiumCustomer:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        customername:
+          type: string
+        company:
+          type: string
+        country:
+          type: string
+        subscription_type:
+          type: string
+          enum: [monthly, yearly]
+        subscription_start_date:
+          type: string
+          format: date-time
+        subscription_end_date:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+        is_deleted:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CustomerSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        submission_data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    FreemiumCustomerWithSubmissions:
+      allOf:
+        - $ref: '#/components/schemas/FreemiumCustomer'
+        - type: object
+          properties:
+            submissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomerSubmission'
+    PremiumCustomerWithSubmissions:
+      allOf:
+        - $ref: '#/components/schemas/PremiumCustomer'
+        - type: object
+          properties:
+            submissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomerSubmission'
+
+  parameters:
+    customerIdParam:
+      name: customerId
+      in: query
+      required: true
+      description: Customer ID for authentication and access control
+      schema:
+        type: string
+
+  responses:
+    PremiumRequired:
+      description: Premium subscription required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Premium access required"
+              current_subscription:
+                type: string
+                example: "freemium"
+              details:
+                type: string
+                example: "This endpoint requires a premium subscription"
