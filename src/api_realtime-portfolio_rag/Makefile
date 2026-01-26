@@ -40,6 +40,9 @@ load_data_files:
 	cat ~/Desktop/hackathon/API.txt > ./datamap/API_SAMPLE.txt
 	cat ~/Desktop/hackathon/SWAGGER.json > ./datamap/SWAGGER_SAMPLE.json
 	@echo "Data files loaded successfully."
+	@echo "Load private GCP project and GEMINI_API_KEY"
+	cat ~/Desktop/hackathon/gcp_env_vars > ./gcp/gcp_env_vars
+	@echo "GCP credentials loaded successfully."
 
 build:
 	@echo "Building Docker image..."
