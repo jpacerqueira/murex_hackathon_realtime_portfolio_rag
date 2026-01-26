@@ -47,6 +47,11 @@ build:
 
 run_all:
 	@echo "Running all Docker containers..."
+	export LLAMA_BASE_URL=http://host.docker.internal:11434
+	export LLAMA_INFERENCE_MODEL=llama3.2
+	export LLAMA_EMBEDDING_MODEL=nomic-embed-text
+	mkdir -p ./shared
+	cp -rf ../shared/streamlit_theme.css ./shared/streamlit_theme.css
 	docker compose -f docker-compose.yml down 2>/dev/null || true
 	docker compose -f docker-compose.yml up --build || true
 	@echo "All Docker containers have been started successfully."

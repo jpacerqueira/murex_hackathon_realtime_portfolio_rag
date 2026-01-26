@@ -63,6 +63,8 @@ run_all:
 	echo "GEMINI_INFERENCE_MODEL: $(GEMINI_INFERENCE_MODEL)"
 	echo "GEMINI_EMBEDDING_MODEL: $(GEMINI_EMBEDDING_MODEL)"
 	echo "GCP_PROJECT: $(GCP_PROJECT)"
+	mkdir -p ./shared
+	cp -rf ../shared/streamlit_theme.css ./shared/streamlit_theme.css
 	docker compose -f docker-compose.yml down 2>/dev/null || true
 	docker compose -f docker-compose.yml up --build || true
 	@echo "All Docker containers have been started successfully."
