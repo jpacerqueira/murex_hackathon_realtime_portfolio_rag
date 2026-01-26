@@ -20,6 +20,7 @@ services:
     volumes:
       - ./config:/app/config
       - ./embedding_model:/embedding_model
+      - ../shared:/app/shared:ro
     networks:
       - llama-local-datamap-rag
     restart: "on-failure:${RESTART_RETRIES:-300}"
