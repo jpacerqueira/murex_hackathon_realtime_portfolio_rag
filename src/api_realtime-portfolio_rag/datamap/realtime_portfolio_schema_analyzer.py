@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 import warnings
 from urllib.parse import urlparse
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
@@ -122,6 +123,33 @@ def create_streamlit_app():
             return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
         except Exception:
             return False
+
+    def _apply_dxc_theme() -> None:
+        st.set_page_config(
+            page_title="Realtime Portfolio API Analyzer",
+            page_icon="📈",
+            layout="wide",
+        )
+        candidate_paths = [
+            Path("/app/shared/streamlit_theme.css"),
+            Path(__file__).resolve().parents[2] / "shared" / "streamlit_theme.css",
+        ]
+        css = None
+        for path in candidate_paths:
+            if path.exists():
+                try:
+                    css = path.read_text(encoding="utf-8")
+                    break
+                except OSError as exc:
+                    st.warning(f"Unable to load theme file: {exc}")
+                    return
+        if not css:
+            st.warning("Theme file missing: /app/shared/streamlit_theme.css")
+            return
+
+        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+    _apply_dxc_theme()
 
     st.title("Realtime Portfolio API Analyzer")
     

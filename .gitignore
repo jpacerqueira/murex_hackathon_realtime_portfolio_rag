@@ -215,4 +215,8 @@ __marimo__/
 ./src/api_realtime-portfolio_rag/datamap/API_SAMPLE.txt
 ./src/api_realtime-portfolio_rag/datamap/SWAGGER_SAMPLE.JSON
 ./src/api_realtime-portfolio_rag/gcp/gcp_env_vars
+API_SAMPLE.txt
+SWAGGER_SAMPLE.JSON
+
+## done!
 

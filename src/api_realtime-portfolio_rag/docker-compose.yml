@@ -13,6 +13,7 @@ services:
       - DATAMAP_CONFIG_PATH=/app/config/datamap_config.json
     volumes:
       - ./config:/app/config
+      - ../shared:/app/shared:ro
     networks:
       - gemini-datamap-rag
     restart: "on-failure:${RESTART_RETRIES:-300}"

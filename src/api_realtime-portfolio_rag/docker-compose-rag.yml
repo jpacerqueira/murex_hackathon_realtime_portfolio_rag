@@ -13,6 +13,7 @@ services:
       - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}
     volumes:
       - ./config:/app/config
+      - ../shared:/app/shared:ro
     networks:
       - gemini-datamap-rag
     restart: "on-failure:${RESTART_RETRIES:-300}"
