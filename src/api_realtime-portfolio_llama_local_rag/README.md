@@ -150,6 +150,21 @@ llama3.2:latest            a80c4f17acd5    2.0 GB    15 months ago
 admin@MacBookPro api_realtime-portfolio_llama_local_rag %
 ```
 
+## Prism Mock Auth Token
+
+The Prism mock server exposes a static token endpoint for local testing.
+
+1. Get a mock token:
+```bash
+curl -X POST http://localhost:4010/auth/token
+```
+
+2. Use the token on API calls:
+```bash
+curl -H "Authorization: Bearer prism-static-token" \
+  http://localhost:4010/v1/api/trade-blotter/trade-views
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

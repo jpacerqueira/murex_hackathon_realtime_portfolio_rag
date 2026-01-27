@@ -131,6 +131,21 @@ The project includes:
 - Type checking with mypy
 - Code formatting with black and isort
 
+## Prism Mock Auth Token
+
+The Prism mock server exposes a static token endpoint for local testing.
+
+1. Get a mock token:
+```bash
+curl -X POST http://localhost:4010/auth/token
+```
+
+2. Use the token on API calls:
+```bash
+curl -H "Authorization: Bearer prism-static-token" \
+  http://localhost:4010/v1/api/trade-blotter/trade-views
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
