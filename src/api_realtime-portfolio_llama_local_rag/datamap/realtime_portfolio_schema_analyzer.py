@@ -49,7 +49,7 @@ class DataMapAPIAnalyzer:
         self.rag_ready = bool(built)
         return self.rag_ready
     
-    def analyze_api(self, query: str, context: str = "api", format_type: str = "json") -> Dict[str, Any]:
+    def analyze_api(self, query: str, context: str = "murex trade api", format_type: str = "json") -> Dict[str, Any]:
         """Analyze the API specification based on a natural language query."""
         if not self.rag_ready:
             raise ValueError("RAG index not built. Initialize the analyzer with a valid Swagger URL.")
@@ -249,7 +249,7 @@ def create_streamlit_app():
         if query and query.strip():  # Check if query is not empty or just whitespace
             try:
                 # log the query context
-                context = "api"
+                context = "murex trade api"
                 format_type = "JSON"
                 st.write(f"Query: {query}")
                 st.write(f"Context: {context}")

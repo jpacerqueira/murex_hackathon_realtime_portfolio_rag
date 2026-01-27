@@ -255,7 +255,7 @@ class LlamaLocalDatamapRAG:
             logger.error(f"Error querying API: {str(e)}")
             raise ValueError(f"Error querying API: {str(e)}")
     
-    def get_detailed_api_analysis(self, query: str = "get all endpoints", context: str = "api", format_type: str = "json") -> str:
+    def get_detailed_api_analysis(self, query: str = "get all endpoints", context: str = "murex trade api", format_type: str = "json") -> str:
         """Get a detailed analysis of the API based on the query."""
         if not self.vector_store:
             raise ValueError("RAG index not built. Call build_rag_index first.")
@@ -320,7 +320,7 @@ class LlamaLocalDatamapRAG:
             logger.error(f"Error getting API analysis: {str(e)}")
             raise ValueError(f"Error getting API analysis: {str(e)}")
 
-    def get_detailed_api_call_in_context(self, query: str = "get all endpoints", context: str = "api and endpoints", format_type: str = "json") -> str:
+    def get_detailed_api_call_in_context(self, query: str = "get all endpoints", context: str = "murex trade api and endpoints", format_type: str = "json") -> str:
         """Get a detailed API call example based on the query."""
         if not self.vector_store:
             raise ValueError("RAG index not built. Call build_rag_index first.")
