@@ -103,6 +103,41 @@
         }
       }
     },
+    "/auth/token": {
+      "post": {
+        "operationId": "getAuthToken",
+        "summary": "Mock Token",
+        "description": "Return a static bearer token for Prism mock usage.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": { "type": "string" },
+                    "token_type": { "type": "string" },
+                    "expires_in": { "type": "integer" }
+                  },
+                  "required": ["access_token", "token_type"]
+                },
+                "examples": {
+                  "static": {
+                    "value": {
+                      "access_token": "prism-static-token",
+                      "token_type": "Bearer",
+                      "expires_in": 3600
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/trade-views": {
       "get": {
         "operationId": "getViews",
