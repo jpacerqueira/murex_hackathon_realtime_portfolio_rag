@@ -17,6 +17,18 @@ services:
       - gemini-datamap-rag
     restart: "on-failure:${RESTART_RETRIES:-300}"
 
+  prism-mock:
+    image: stoplight/prism:4
+    container_name: gemini-datamap-prism-mock
+    command: ["mock", "/app/SWAGGER_SAMPLE.JSON", "--host", "0.0.0.0", "--port", "4010"]
+    ports:
+      - "4010:4010"
+    volumes:
+      - ./datamap/SWAGGER_SAMPLE.JSON:/app/SWAGGER_SAMPLE.JSON:ro
+    networks:
+      - gemini-datamap-rag
+    restart: "on-failure:${RESTART_RETRIES:-300}"
+
 
 networks:
   gemini-datamap-rag:

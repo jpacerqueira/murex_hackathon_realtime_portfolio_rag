@@ -150,6 +150,37 @@ llama3.2:latest            a80c4f17acd5    2.0 GB    15 months ago
 admin@MacBookPro api_realtime-portfolio_llama_local_rag %
 ```
 
+## Prism Mock Auth Token
+
+The Prism mock server exposes a static token endpoint for local testing.
+
+1. Get a mock token:
+```bash
+curl -X POST http://localhost:4010/auth/token
+```
+
+2. Use the token on API calls:
+```bash
+curl -H "Authorization: Bearer prism-static-token" \
+  http://localhost:4010/v1/api/trade-blotter/trade-views
+```
+
+Example session:
+```bash
+ 
+  curl -X POST http://localhost:4010/auth/token
+{"access_token":"prism-static-token","token_type":"Bearer","expires_in":3600}%
+ 
+ 
+  curl -H "Authorization: Bearer prism-static-token" \
+  http://localhost:4010/trade-views
+{"tradeViews":[{"id":"44a30c97-a4c1-407e-8293-ecafd163e299","label":"Daily Basic","description":"User friendly description for Daily Basic"},{"id":"6d2a8328-0d53-40dd-bfc2-77802672eca8","label":"Daily Detailed","description":"User friendly description for Daily Detailed"},{"id":"95c14eb5-034f-4b81-90c0-9c44b12d74b1","label":"Live Basic"},{"id":"7843c17a-e1d7-4135-831a-90b421b3d469","label":"Live Detailed"}]}%
+  curl -H "Authorization: Bearer prism-static-token" \
+  http://localhost:4010/trade-views/44a30c97-a4c1-407e-8293-ecafd163e299/snapshots/1
+{"id":"44a30c97-a4c1-407e-8293-ecafd163e299","label":"Daily Basic","description":"User friendly description for Daily Basic View","staleDataTimestamp":"2022-10-20T15:32:12.124Z","schema":{"fields":[{"name":"BrokerFeeCcy","title":"BrokerFeeCcy","type":"string"},{"name":"ContractTypology","type":"string"},{"name":"Counterpart","type":"string"},{"name":"FaceAmount","type":"number"},{"name":"FaceCcy","type":"string"},{"name":"GlobalID","type":"string"},{"name":"Instrument","type":"string"},{"name":"InternalStatus","type":"number"},{"name":"LiveStatus","type":"string"},{"name":"MarginAmount","type":"number"},{"name":"Maturity","type":"number"},{"name":"NetPriceOrRate","type":"number"},{"name":"NominalCcy","type":"string"},{"name":"OtherCcy","type":"string"},{"name":"OtherNominal","type":"number"},{"name":"Portfolio","type":"string"},{"name":"Price","type":"number"},{"name":"SalesUser","type":"number"},{"name":"Typology","type":"number"},{"name":"User","type":"string"},{"name":"ValidationLevel","type":"string"}],"primaryKey":["GlobalID","Instrument","ContractTypology","Counterpart","FaceCcy"]},"data":[{"BrokerFeeCcy":"","ContractTypology":"Spot","Counterpart":"COMPANY B","FaceAmount":-300000,"FaceCcy":"EUR","GlobalID":"","Instrument":"EUR/USD","InternalStatus":"Ins","LiveStatus":"MKT_OP","MarginAmount":360,"Maturity":"09/10/2020","NetPriceOrRate":1.1759,"NominalCcy":"","OtherCcy":"USD","OtherNominal":352770,"Portfolio":"FX AVERAGING","Price":1.1747,"SalesUser":"","Typology":"Spot","User":"MUREXFO","ValidationLevel":"EventPending"},{"BrokerFeeCcy":"","ContractTypology":"Spot","Counterpart":"COMPANY B","FaceAmount":-300000,"FaceCcy":"EUR","GlobalID":"","Instrument":"EUR/USD","InternalStatus":"Cncl","LiveStatus":"DEAD","MarginAmount":360,"Maturity":"09/10/2020","NetPriceOrRate":1.1759,"NominalCcy":"","OtherCcy":"USD","OtherNominal":352770,"Portfolio":"FX AVERAGING","Price":1.1747,"SalesUser":"","Typology":"Spot","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"","ContractTypology":"Future COM","Counterpart":"BMFBOVESPA SA","FaceAmount":100,"FaceCcy":"","GlobalID":"","Instrument":"DE_BS_PHY_EEX","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"03/01/2022","NetPriceOrRate":0,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"MX_PTF","Price":0,"SalesUser":"","Typology":"Future COM","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"","ContractTypology":"Future COM","Counterpart":"BMFBOVESPA SA","FaceAmount":1000,"FaceCcy":"","GlobalID":"","Instrument":"NG MINI NMX","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"28/10/2020","NetPriceOrRate":2.931,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"MX_PTF","Price":2.931,"SalesUser":"","Typology":"Future COM","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"USD","ContractTypology":"IRS","Counterpart":"LCH - SWAP CLEAR","FaceAmount":1000000,"FaceCcy":"USD","GlobalID":"","Instrument":"USD LIBOR S 3M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"09/10/2040","NetPriceOrRate":1.12002234,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"FI_GOVIES_G20","Price":0,"SalesUser":"","Typology":"IRS","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"USD","ContractTypology":"IRS","Counterpart":"COMPANY A","FaceAmount":1000000,"FaceCcy":"USD","GlobalID":"","Instrument":"USD LIBOR S 3M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":5400,"Maturity":"09/10/2030","NetPriceOrRate":0.688756,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"IRD LINEAR USD","Price":0,"SalesUser":"","Typology":"IRS","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"USD","ContractTypology":"IRS","Counterpart":"LCH - SWAP CLEAR","FaceAmount":1000000,"FaceCcy":"USD","GlobalID":"","Instrument":"USD LIBOR S 3M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"09/10/2025","NetPriceOrRate":0.41539407,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"FI_GOVIES_G20","Price":0,"SalesUser":"","Typology":"IRS","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"USD","ContractTypology":"IRS","Counterpart":"COMPANY A","FaceAmount":1000000,"FaceCcy":"USD","GlobalID":"","Instrument":"USD LIBOR S 3M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":1651.53,"Maturity":"09/10/2023","NetPriceOrRate":0.2343658,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"IRD LINEAR USD","Price":0,"SalesUser":"","Typology":"IRS","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"","ContractTypology":"Swaption European","Counterpart":"BARCLAYS BANK","FaceAmount":10000000,"FaceCcy":"EUR","GlobalID":"","Instrument":"EURIBOR A 6M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"07/10/2022","NetPriceOrRate":0,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"MX_PTF","Price":0,"SalesUser":"","Typology":"Swaption European","User":"MUREXFO","ValidationLevel":"MxDefault"},{"BrokerFeeCcy":"","ContractTypology":"Swaption European","Counterpart":"BARCLAYS BANK","FaceAmount":10000000,"FaceCcy":"EUR","GlobalID":"","Instrument":"EURIBOR A 6M","InternalStatus":"Ins","LiveStatus":"LIVE","MarginAmount":0,"Maturity":"07/10/2022","NetPriceOrRate":0,"NominalCcy":"","OtherCcy":"","OtherNominal":0,"Portfolio":"MX_PTF","Price":0,"SalesUser":"","Typology":"Swaption European","User":"MUREXFO","ValidationLevel":"MxDefault"}]}%
+ 
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

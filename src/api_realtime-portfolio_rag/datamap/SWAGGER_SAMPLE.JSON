@@ -69,6 +69,40 @@
     "url": "https://docs.murex.com/pages/findpage?docid=24852"
   },
   "paths": {
+    "/": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Health Check",
+        "description": "Simple health check for the Prism mock server.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                },
+                "examples": {
+                  "ok": {
+                    "value": {
+                      "status": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/trade-views": {
       "get": {
         "operationId": "getViews",
