@@ -37,7 +37,8 @@ help:
 
 load_data_files:
 	@echo "Loading data files..."
-	cat ~/Desktop/hackathon/API.txt > ./datamap/API_SAMPLE.txt
+	cat ~/Desktop/hackathon/Enchanced_steps.TradeBlotter.txt > ./datamap/API_SAMPLE.txt
+	cat ~/Desktop/hackathon/API.txt >> ./datamap/API_SAMPLE.txt
 	cat ~/Desktop/hackathon/SWAGGER.json > ./datamap/SWAGGER_SAMPLE.json
 	@echo "Data files loaded successfully."
 	@echo "Load private GCP project and GEMINI_API_KEY"
