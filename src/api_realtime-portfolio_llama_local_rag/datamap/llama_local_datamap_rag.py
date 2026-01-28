@@ -2,10 +2,7 @@ import json
 from typing import List, Dict, Any, Tuple, Optional
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
-try:
-    from langchain_ollama import OllamaEmbeddings
-except ImportError:
-    from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 try:
