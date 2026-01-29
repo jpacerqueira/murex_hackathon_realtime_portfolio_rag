@@ -281,7 +281,7 @@ class LlamaLocalDatamapRAG:
             3. Authentication and authorization requirements
             4. API usage patterns and best practices
             5. Potential integration issues
-            6. Example API calls in """
+            6. Description of API Steps to be executed to achieve the query """
                 + format_type
                 + """ format with proper request structure.
             
