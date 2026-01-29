@@ -266,54 +266,6 @@ def create_streamlit_app():
                     st.write("API Call:")
                     st.write(api_call)
                 
-                # Similar API tab
-                with st.expander("Similar API Endpoints"):
-                    similar_api, scores = st.session_state.analyzer.get_similar_api(query)
-                    for i, (text, score) in enumerate(zip(similar_api, scores)):
-                        st.write(f"Result {i+1} (Score: {score:.4f}):")
-                        st.write(text)
-                
-                # API summary tab
-                with st.expander("API Summary"):
-                    summary = st.session_state.analyzer.get_api_summary()
-                    st.write(f"Total Endpoints: {summary['total_endpoints']}")
-                    
-                    for endpoint in summary["endpoints"]:
-                        with st.expander(f"Endpoint: {endpoint['method']} {endpoint['path']}"):
-                            st.write(f"Description: {endpoint['description']}")
-                            st.write(f"Tags: {', '.join(endpoint['tags'])}")
-                            st.write(f"Parameters ({endpoint['parameter_count']}):")
-                            st.write(endpoint["parameters"])
-                            st.write(f"Has Request Body: {endpoint['has_request_body']}")
-                            st.write(f"Response Codes: {', '.join(endpoint['response_codes'])}")
-                            
-                            # Show endpoint specification
-                            endpoint_spec = st.session_state.analyzer.get_endpoint_spec(endpoint["path"])
-                            if endpoint_spec:
-                                st.write("Endpoint Details:")
-                                df = pd.DataFrame(endpoint_spec.get("parameters", []))
-                                if not df.empty:
-                                    st.dataframe(df)
-                                
-                                # Parameter analysis
-                                if endpoint_spec.get("parameters"):
-                                    selected_parameter = st.selectbox(
-                                        "Select a parameter for detailed analysis:",
-                                        [param["name"] for param in endpoint_spec["parameters"]],
-                                        key=f"param_select_{endpoint['path']}"
-                                    )
-                                    
-                                    if selected_parameter:
-                                        parameter_info = st.session_state.analyzer.get_parameter_info(
-                                            endpoint["path"],
-                                            selected_parameter
-                                        )
-                                        st.write("Parameter Analysis:")
-                                        st.write(f"Name: {parameter_info.get('name', 'N/A')}")
-                                        st.write(f"Type: {parameter_info.get('type', 'N/A')}")
-                                        st.write(f"Required: {parameter_info.get('required', False)}")
-                                        st.write(f"Location: {parameter_info.get('in', 'N/A')}")
-                                        st.write(f"Description: {parameter_info.get('description', 'N/A')}")
             except Exception as e:
                 st.error(f"Error processing query: {str(e)}")
                 st.error("Please try again with a different query or check the logs for more details.")
