@@ -319,7 +319,8 @@ def create_streamlit_app():
                         "prism_mock_base_url",
                         os.getenv("PRISM_MOCK_BASE_URL", "http://prism-mock:4010"),
                     )
-                    view_id = st.text_input("View ID (for {viewId}):", "")
+                    default_view_id = "44a30c97-a4c1-407e-8293-ecafd163e299"
+                    view_id = st.text_input("View ID (for {viewId}):", default_view_id)
 
                     st.write("Token request (fixed):")
                     st.code("curl -X POST http://prism-mock:4010/auth/token")
@@ -364,8 +365,10 @@ def create_streamlit_app():
                                     if parsed.query:
                                         path = f"{path}?{parsed.query}"
                                     target_url = f"{mock_base_url.rstrip('/')}{path}"
-                                    if view_id:
-                                        target_url = target_url.replace("{viewId}", view_id)
+                                    target_url = target_url.replace(
+                                        "{viewId}",
+                                        view_id.strip() if view_id.strip() else default_view_id,
+                                    )
 
                                     headers = dict(request_info.get("headers") or {})
                                     headers["Authorization"] = f"Bearer {current_token}"
