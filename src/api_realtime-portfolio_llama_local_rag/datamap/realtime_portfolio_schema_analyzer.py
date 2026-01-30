@@ -352,14 +352,14 @@ def create_streamlit_app():
                         st.warning("No token loaded. Initialize the analyzer to fetch one.")
 
                     if current_token:
-                        if st.button("Execute API Call"):
+                        if st.button("Validate API Steps"):
                             api_call = st.session_state.analyzer.get_detailed_api_call_in_context(
                                 query, context, format_type
                             )
                             st.session_state.api_call_result = api_call
 
                     if not api_call:
-                        st.info("Execute API Call to generate the mock steps.")
+                        st.info("Validate API Steps to generate the mock steps.")
                         api_call_payload = None
                     else:
                         api_call_payload = _parse_prism_payload(api_call.get("api_call"))
