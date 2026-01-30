@@ -362,43 +362,85 @@ def create_streamlit_app():
                         st.info("Validate API Steps to generate the mock steps.")
                         api_call_payload = None
                     else:
-                        api_call_payload = _parse_prism_payload(api_call.get("api_call"))
-                        st.info(f"JP - debugging API call payload: {api_call_payload}")
+                        api_call_obj = api_call if isinstance(api_call, dict) else {"api_call": api_call}
+                        api_call_payload = _parse_prism_payload(api_call_obj.get("api_call"))
                     if not api_call_payload:
                         st.info("API call payload is not JSON; cannot extract steps.")
                     else:
-                        st.info(f"debugging API call payload: {api_call_payload}")
-                        steps = api_call_payload.get("steps") or []
-                        api_calls = api_call_payload.get("api_calls") or []
-                        if steps and not api_calls:
+                        if isinstance(api_call_payload, list):
+                            steps = api_call_payload
+                            api_calls = []
                             for step in steps:
-                                action = (step.get("action") or "").strip()
-                                method = "GET"
-                                url = ""
-                                if action:
-                                    parts = action.split(" ", 1)
-                                    if len(parts) == 2:
-                                        method = parts[0].upper()
-                                        url = parts[1].strip()
-                                    else:
-                                        url = action
+                                request_info = step.get("request") or {}
+                                endpoint = request_info.get("endpoint") or ""
                                 api_calls.append(
                                     {
                                         "step": step.get("description")
-                                        or f"Step {step.get('step_id', '')}".strip(),
+                                        or step.get("action")
+                                        or f"Step {step.get('step', '')}".strip(),
                                         "request": {
-                                            "method": method,
-                                            "url": url,
-                                            "headers": step.get("headers") or {},
-                                            "body": step.get("request_body"),
+                                            "method": request_info.get("method") or "GET",
+                                            "url": endpoint,
+                                            "headers": request_info.get("headers") or {},
+                                            "body": request_info.get("body"),
                                         },
                                     }
                                 )
+                        elif isinstance(api_call_payload, dict) and "api_workflow" in api_call_payload:
+                            steps = api_call_payload.get("api_workflow") or []
+                            api_calls = []
+                            for step in steps:
+                                request_info = step.get("request") or {}
+                                endpoint = request_info.get("endpoint") or ""
+                                api_calls.append(
+                                    {
+                                        "step": step.get("description")
+                                        or step.get("action")
+                                        or f"Step {step.get('step', '')}".strip(),
+                                        "request": {
+                                            "method": request_info.get("method") or "GET",
+                                            "url": endpoint,
+                                            "headers": request_info.get("headers") or {},
+                                            "body": request_info.get("body"),
+                                        },
+                                    }
+                                )
+                        else:
+                            steps = api_call_payload.get("steps") or []
+                            api_calls = api_call_payload.get("api_calls") or []
+                            if steps and not api_calls:
+                                for step in steps:
+                                    action = (step.get("action") or "").strip()
+                                    method = "GET"
+                                    url = ""
+                                    if action:
+                                        parts = action.split(" ", 1)
+                                        if len(parts) == 2:
+                                            method = parts[0].upper()
+                                            url = parts[1].strip()
+                                        else:
+                                            url = action
+                                    api_calls.append(
+                                        {
+                                            "step": step.get("description")
+                                            or f"Step {step.get('step_id', '')}".strip(),
+                                            "request": {
+                                                "method": method,
+                                                "url": url,
+                                                "headers": step.get("headers") or {},
+                                                "body": step.get("request_body"),
+                                            },
+                                        }
+                                    )
 
                         if steps:
                             st.write("Execution Steps:")
                             for step in steps:
-                                st.write(f"- {step}")
+                                if isinstance(step, dict):
+                                    label = step.get("description") or step.get("action") or str(step)
+                                    st.write(f"- {label}")
+                                else:
+                                    st.write(f"- {step}")
 
                         if api_calls and st.button("Run Steps with Prism Mock"):
                             if not current_token:

@@ -364,23 +364,43 @@ def create_streamlit_app():
                         st.warning("No token loaded. Initialize the analyzer to fetch one.")
 
                     if current_token:
-                        if st.button("Execute API Call"):
+                        if st.button("Validate API Steps"):
                             api_call = st.session_state.analyzer.get_detailed_api_call_in_context(
                                 query, context, format_type
                             )
                             st.session_state.api_call_result = api_call
 
                     if not api_call:
-                        st.info("Execute API Call to generate the mock steps.")
+                        st.info("Validate API Steps to generate the mock steps.")
                         api_call_payload = None
                     else:
-                        api_call_payload = _parse_prism_payload(api_call.get("api_call"))
+                        api_call_obj = api_call if isinstance(api_call, dict) else {"api_call": api_call}
+                        api_call_payload = _parse_prism_payload(api_call_obj.get("api_call"))
                         st.info(f"JP - debugging API call payload: {api_call_payload}")
                     if not api_call_payload:
                         st.info("API call payload is not JSON; cannot extract steps.")
                     else:
                         if isinstance(api_call_payload, list):
                             steps = api_call_payload
+                            api_calls = []
+                            for step in steps:
+                                request_info = step.get("request") or {}
+                                endpoint = request_info.get("endpoint") or ""
+                                api_calls.append(
+                                    {
+                                        "step": step.get("description")
+                                        or step.get("action")
+                                        or f"Step {step.get('step', '')}".strip(),
+                                        "request": {
+                                            "method": request_info.get("method") or "GET",
+                                            "url": endpoint,
+                                            "headers": request_info.get("headers") or {},
+                                            "body": request_info.get("body"),
+                                        },
+                                    }
+                                )
+                        elif isinstance(api_call_payload, dict) and "api_workflow" in api_call_payload:
+                            steps = api_call_payload.get("api_workflow") or []
                             api_calls = []
                             for step in steps:
                                 request_info = step.get("request") or {}
