@@ -310,6 +310,14 @@ def create_streamlit_app():
         
         if query and query.strip():  # Check if query is not empty or just whitespace
             try:
+                if st.session_state.get("last_query") != query:
+                    st.session_state.last_query = query
+                    st.session_state.run_analysis = False
+                    st.session_state.api_call_result = None
+
+                if st.button("Start API Analysis"):
+                    st.session_state.run_analysis = True
+
                 # log the query context
                 context = "murex trade api"
                 format_type = "JSON"
@@ -317,16 +325,18 @@ def create_streamlit_app():
                 st.write(f"Context: {context}")
                 st.write(f"Format Type: {format_type}")
                 # Analysis tab
-                with st.expander("API Analysis"):
-                    analysis = st.session_state.analyzer.analyze_api(query, context, format_type)
-                    st.write("Analysis:")
-                    st.write(analysis["analysis"])
+                analysis = None
+                if st.session_state.get("run_analysis"):
+                    with st.expander("API Analysis"):
+                        analysis = st.session_state.analyzer.analyze_api(query, context, format_type)
+                        st.write("Analysis:")
+                        st.write(analysis["analysis"])
                 
-                # API call in context tab
-                with st.expander("API steps in Context"):
-                    api_call = st.session_state.analyzer.get_detailed_api_call_in_context(query, context, format_type)
-                    st.write("API Call:")
-                    st.write(api_call)
+                api_call = st.session_state.get("api_call_result")
+                if api_call:
+                    with st.expander("API steps in Context"):
+                        st.write("API Call:")
+                        st.write(api_call)
 
                 with st.expander("Prism Mock Execution"):
                     mock_base_url = st.session_state.get(
@@ -353,7 +363,19 @@ def create_streamlit_app():
                     else:
                         st.warning("No token loaded. Initialize the analyzer to fetch one.")
 
-                    api_call_payload = _parse_prism_payload(api_call.get("api_call"))
+                    if current_token:
+                        if st.button("Execute API Call"):
+                            api_call = st.session_state.analyzer.get_detailed_api_call_in_context(
+                                query, context, format_type
+                            )
+                            st.session_state.api_call_result = api_call
+
+                    if not api_call:
+                        st.info("Execute API Call to generate the mock steps.")
+                        api_call_payload = None
+                    else:
+                        api_call_payload = _parse_prism_payload(api_call.get("api_call"))
+                        st.info(f"JP - debugging API call payload: {api_call_payload}")
                     if not api_call_payload:
                         st.info("API call payload is not JSON; cannot extract steps.")
                     else:
