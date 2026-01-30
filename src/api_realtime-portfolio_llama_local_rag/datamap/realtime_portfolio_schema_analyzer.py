@@ -125,12 +125,26 @@ def create_streamlit_app():
             return raw
         if not isinstance(raw, str):
             return None
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+
+    def _parse_prism_payload(raw: Any) -> Optional[Dict[str, Any]]:
+        if isinstance(raw, dict):
+            return raw
+        if not isinstance(raw, str):
+            return None
         text = raw.strip()
-        if text.startswith("```"):
-            text = "\n".join(text.split("\n")[1:])
-            if text.endswith("```"):
-                text = "\n".join(text.split("\n")[:-1])
-            text = text.strip()
+        if "```" in text:
+            start = text.find("```")
+            end = text.rfind("```")
+            if start != -1 and end != -1 and end > start:
+                fenced = text[start + 3 : end]
+                fenced = fenced.lstrip()
+                if fenced.lower().startswith("json"):
+                    fenced = fenced[4:].lstrip()
+                text = fenced.strip()
         try:
             return json.loads(text)
         except json.JSONDecodeError:
@@ -327,7 +341,7 @@ def create_streamlit_app():
                     else:
                         st.warning("No token loaded. Initialize the analyzer to fetch one.")
 
-                    analysis_payload = _parse_analysis_payload(analysis["analysis"])
+                    analysis_payload = _parse_prism_payload(analysis["analysis"])
                     if not analysis_payload:
                         st.info("Analysis response is not JSON; cannot extract steps.")
                     else:
