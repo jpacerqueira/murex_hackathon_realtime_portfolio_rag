@@ -376,8 +376,8 @@ def create_streamlit_app():
                     else:
                         api_call_obj = api_call if isinstance(api_call, dict) else {"api_call": api_call}
                         api_call_payload = _parse_prism_payload(api_call_obj.get("api_call"))
-                        st.info("The API call payload is possible JSON:")
-                        st.write(f"API Workflow in API Call: {api_call_payload.get('api_workflow')}")
+                        st.info("The API call steps are possible - JSON formatted:")
+                        st.json(api_call_payload.get("api_workflow"))
                     if not api_call_payload:
                         st.info("API call payload is not JSON; cannot extract steps.")
                     else:
