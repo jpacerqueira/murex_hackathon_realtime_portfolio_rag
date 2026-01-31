@@ -130,7 +130,7 @@ class LlamaLocalDatamapRAG:
                 api_key=api_key,
                 base_url=openai_base_url,
                 temperature=0.0,
-                max_tokens=10000,
+                max_tokens=120000,
             )
             
             # Test the connection by making a simple embedding request
@@ -204,8 +204,8 @@ class LlamaLocalDatamapRAG:
                 return False
 
             # Split text into chunks
-            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 2000)
-            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 200)
+            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 40000)
+            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 20)
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap
@@ -360,7 +360,7 @@ class LlamaLocalDatamapRAG:
             Requirements:
             - Return JSON only, no extra text or markdown.
             - Use "api_workflow" as the top-level key.
-            - Provide 3-6 steps aligned with the API spec.
+            - Provide 4, 5, 6 or 7 steps aligned with the API spec.
             - Include Authorization header when required.
             - Use {viewId} placeholder when needed.
             """
