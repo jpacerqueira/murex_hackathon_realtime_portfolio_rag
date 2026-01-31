@@ -6,6 +6,8 @@ except ImportError:
 import streamlit as st
 import pandas as pd
 import os
+import json
+import requests
 from dotenv import load_dotenv
 import warnings
 from urllib.parse import urlparse
@@ -124,6 +126,36 @@ def create_streamlit_app():
         except Exception:
             return False
 
+    def _parse_analysis_payload(raw: Any) -> Optional[Dict[str, Any]]:
+        if isinstance(raw, dict):
+            return raw
+        if not isinstance(raw, str):
+            return None
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+
+    def _parse_prism_payload(raw: Any) -> Optional[Dict[str, Any]]:
+        if isinstance(raw, dict):
+            return raw
+        if not isinstance(raw, str):
+            return None
+        text = raw.strip()
+        if "```" in text:
+            start = text.find("```")
+            end = text.rfind("```")
+            if start != -1 and end != -1 and end > start:
+                fenced = text[start + 3 : end]
+                fenced = fenced.lstrip()
+                if fenced.lower().startswith("json"):
+                    fenced = fenced[4:].lstrip()
+                text = fenced.strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return None
+
     def _apply_dxc_theme() -> None:
         st.set_page_config(
             page_title="Realtime Portfolio API Analyzer",
@@ -191,6 +223,10 @@ def create_streamlit_app():
         with col2:
             cache_size = st.number_input("Cache Size:", min_value=1, max_value=1000, value=128)
         pattern = st.text_input("Endpoint Pattern (optional):", "")
+        mock_base_url = st.text_input(
+            "Prism Mock Base URL:",
+            os.getenv("PRISM_MOCK_BASE_URL", "http://prism-mock:4010"),
+        )
     
     if st.button("Initialize Analyzer"):
         try:
@@ -250,6 +286,21 @@ def create_streamlit_app():
                         "Analyzer initialized, but no Swagger endpoints were learned. "
                         "Check the Swagger URL if you expect embeddings."
                     )
+
+                st.session_state.prism_mock_base_url = mock_base_url
+                try:
+                    token_url = f"{mock_base_url.rstrip('/')}/auth/token"
+                    response = requests.post(token_url, timeout=10)
+                    response.raise_for_status()
+                    data = response.json() if response.content else {}
+                    token = data.get("access_token") or data.get("token")
+                    if token:
+                        st.session_state.prism_access_token = token
+                        st.info("Prism mock token retrieved during initialization.")
+                    else:
+                        st.warning("Prism mock token not found in response.")
+                except Exception as e:
+                    st.warning(f"Prism mock token request failed: {str(e)}")
         except Exception as e:
             st.error(f"Error initializing analyzer: {str(e)}")
     
@@ -259,6 +310,14 @@ def create_streamlit_app():
         
         if query and query.strip():  # Check if query is not empty or just whitespace
             try:
+                if st.session_state.get("last_query") != query:
+                    st.session_state.last_query = query
+                    st.session_state.run_analysis = False
+                    st.session_state.api_call_result = None
+
+                if st.button("Start API Analysis"):
+                    st.session_state.run_analysis = True
+
                 # log the query context
                 context = "murex trade api"
                 format_type = "JSON"
@@ -266,65 +325,196 @@ def create_streamlit_app():
                 st.write(f"Context: {context}")
                 st.write(f"Format Type: {format_type}")
                 # Analysis tab
-                with st.expander("API Analysis"):
-                    analysis = st.session_state.analyzer.analyze_api(query, context, format_type)
-                    st.write("Analysis:")
-                    st.write(analysis["analysis"])
+                analysis = None
+                if st.session_state.get("run_analysis"):
+                    with st.expander("API Analysis"):
+                        analysis = st.session_state.analyzer.analyze_api(query, context, format_type)
+                        st.write("Analysis:")
+                        st.write(analysis["analysis"])
                 
-                # API call in context tab
-                with st.expander("API Call in Context"):
-                    api_call = st.session_state.analyzer.get_detailed_api_call_in_context(query, context, format_type)
-                    st.write("API Call:")
-                    st.write(api_call)
-                
-                # Similar API tab
-                with st.expander("Similar API Endpoints"):
-                    similar_api, scores = st.session_state.analyzer.get_similar_api(query)
-                    for i, (text, score) in enumerate(zip(similar_api, scores)):
-                        st.write(f"Result {i+1} (Score: {score:.4f}):")
-                        st.write(text)
-                
-                # API summary tab
-                with st.expander("API Summary"):
-                    summary = st.session_state.analyzer.get_api_summary()
-                    st.write(f"Total Endpoints: {summary['total_endpoints']}")
-                    
-                    for endpoint in summary["endpoints"]:
-                        with st.expander(f"Endpoint: {endpoint['method']} {endpoint['path']}"):
-                            st.write(f"Description: {endpoint['description']}")
-                            st.write(f"Tags: {', '.join(endpoint['tags'])}")
-                            st.write(f"Parameters ({endpoint['parameter_count']}):")
-                            st.write(endpoint["parameters"])
-                            st.write(f"Has Request Body: {endpoint['has_request_body']}")
-                            st.write(f"Response Codes: {', '.join(endpoint['response_codes'])}")
-                            
-                            # Show endpoint specification
-                            endpoint_spec = st.session_state.analyzer.get_endpoint_spec(endpoint["path"])
-                            if endpoint_spec:
-                                st.write("Endpoint Details:")
-                                df = pd.DataFrame(endpoint_spec.get("parameters", []))
-                                if not df.empty:
-                                    st.dataframe(df)
-                                
-                                # Parameter analysis
-                                if endpoint_spec.get("parameters"):
-                                    selected_parameter = st.selectbox(
-                                        "Select a parameter for detailed analysis:",
-                                        [param["name"] for param in endpoint_spec["parameters"]],
-                                        key=f"param_select_{endpoint['path']}"
+                api_call = st.session_state.get("api_call_result")
+                if api_call:
+                    with st.expander("API steps in Context"):
+                        st.write("API Call:")
+                        st.write(api_call)
+
+                with st.expander("Prism Mock Execution"):
+                    mock_base_url = st.session_state.get(
+                        "prism_mock_base_url",
+                        os.getenv("PRISM_MOCK_BASE_URL", "http://prism-mock:4010"),
+                    )
+                    default_view_id = "44a30c97-a4c1-407e-8293-ecafd163e299"
+                    view_id = st.text_input("View ID (for {viewId}):", default_view_id)
+
+                    st.write("Token request (fixed):")
+                    st.code("curl -X POST http://prism-mock:4010/auth/token")
+                    st.write("Token response (example):")
+                    st.json(
+                        {
+                            "access_token": "prism-static-token",
+                            "token_type": "Bearer",
+                            "expires_in": 3600,
+                        }
+                    )
+
+                    current_token = st.session_state.get("prism_access_token", "")
+                    if current_token:
+                        st.write(f"Token loaded: {current_token[:10]}...")
+                    else:
+                        st.warning("No token loaded. Initialize the analyzer to fetch one.")
+
+                    if current_token:
+                        if st.button("Validate API Steps"):
+                            api_call = st.session_state.analyzer.get_detailed_api_call_in_context(
+                                query, context, format_type
+                            )
+                            st.session_state.api_call_result = api_call
+
+                    if not api_call:
+                        st.info("Validate API Steps to generate the mock steps.")
+                        api_call_payload = None
+                    else:
+                        api_call_obj = api_call if isinstance(api_call, dict) else {"api_call": api_call}
+                        api_call_payload = _parse_prism_payload(api_call_obj.get("api_call"))
+                        st.info("The API call payload is possible JSON:")
+                        st.write(f"API Workflow in API Call: {api_call_payload.get('api_workflow')}")
+                    if not api_call_payload:
+                        st.info("API call payload is not JSON; cannot extract steps.")
+                    else:
+                        if isinstance(api_call_payload, list):
+                            steps = api_call_payload
+                            api_calls = []
+                            for step in steps:
+                                request_info = step.get("request") or {}
+                                endpoint = request_info.get("endpoint") or ""
+                                api_calls.append(
+                                    {
+                                        "step": step.get("description")
+                                        or step.get("action")
+                                        or f"Step {step.get('step', '')}".strip(),
+                                        "request": {
+                                            "method": request_info.get("method") or "GET",
+                                            "url": endpoint,
+                                            "headers": request_info.get("headers") or {},
+                                            "body": request_info.get("body"),
+                                        },
+                                    }
+                                )
+                        elif isinstance(api_call_payload, dict) and "api_workflow" in api_call_payload:
+                            steps = api_call_payload.get("api_workflow") or []
+                            api_calls = []
+                            for step in steps:
+                                request_info = step.get("request") or {}
+                                endpoint = request_info.get("endpoint") or ""
+                                api_calls.append(
+                                    {
+                                        "step": step.get("description")
+                                        or step.get("action")
+                                        or f"Step {step.get('step', '')}".strip(),
+                                        "request": {
+                                            "method": request_info.get("method") or "GET",
+                                            "url": endpoint,
+                                            "headers": request_info.get("headers") or {},
+                                            "body": request_info.get("body"),
+                                        },
+                                    }
+                                )
+                        else:
+                            steps = api_call_payload.get("steps") or []
+                            api_calls = api_call_payload.get("api_calls") or []
+                            if steps and not api_calls:
+                                for step in steps:
+                                    action = (step.get("action") or "").strip()
+                                    method = "GET"
+                                    url = ""
+                                    if action:
+                                        parts = action.split(" ", 1)
+                                        if len(parts) == 2:
+                                            method = parts[0].upper()
+                                            url = parts[1].strip()
+                                        else:
+                                            url = action
+                                    api_calls.append(
+                                        {
+                                            "step": step.get("description")
+                                            or f"Step {step.get('step_id', '')}".strip(),
+                                            "request": {
+                                                "method": method,
+                                                "url": url,
+                                                "headers": step.get("headers") or {},
+                                                "body": step.get("request_body"),
+                                            },
+                                        }
                                     )
-                                    
-                                    if selected_parameter:
-                                        parameter_info = st.session_state.analyzer.get_parameter_info(
-                                            endpoint["path"],
-                                            selected_parameter
+
+                        if steps:
+                            st.write("Execution Steps:")
+                            for step in steps:
+                                if isinstance(step, dict):
+                                    label = step.get("description") or step.get("action") or str(step)
+                                    st.write(f"- {label}")
+                                else:
+                                    st.write(f"- {step}")
+
+                        if api_calls and st.button("Run Steps with Prism Mock"):
+                            if not current_token:
+                                st.warning("Please retrieve a token first.")
+                            else:
+                                for call in api_calls:
+                                    request_info = call.get("request", {})
+                                    method = (request_info.get("method") or "GET").upper()
+                                    url = request_info.get("url") or ""
+                                    parsed = urlparse(url)
+                                    path = parsed.path or ""
+                                    if parsed.query:
+                                        path = f"{path}?{parsed.query}"
+                                    target_url = f"{mock_base_url.rstrip('/')}{path}"
+                                    target_url = target_url.replace(
+                                        "{viewId}",
+                                        view_id.strip() if view_id.strip() else default_view_id,
+                                    )
+
+                                    headers = dict(request_info.get("headers") or {})
+                                    headers["Authorization"] = f"Bearer {current_token}"
+                                    body = request_info.get("body")
+
+                                    st.write(f"{call.get('step', 'Step')}: {method} {target_url}")
+                                    try:
+                                        response = requests.request(
+                                            method,
+                                            target_url,
+                                            headers=headers,
+                                            json=body if body else None,
+                                            timeout=15,
+                                            allow_redirects=False,
                                         )
-                                        st.write("Parameter Analysis:")
-                                        st.write(f"Name: {parameter_info.get('name', 'N/A')}")
-                                        st.write(f"Type: {parameter_info.get('type', 'N/A')}")
-                                        st.write(f"Required: {parameter_info.get('required', False)}")
-                                        st.write(f"Location: {parameter_info.get('in', 'N/A')}")
-                                        st.write(f"Description: {parameter_info.get('description', 'N/A')}")
+                                        st.write(f"Status: {response.status_code}")
+                                        if response.status_code in {301, 302, 303, 307, 308}:
+                                            location = response.headers.get("Location", "")
+                                            if location:
+                                                if location.startswith("http"):
+                                                    follow_url = location
+                                                else:
+                                                    follow_url = f"{mock_base_url.rstrip('/')}{location}"
+                                                st.write(f"Redirecting to: {follow_url}")
+                                                follow_resp = requests.get(
+                                                    follow_url,
+                                                    headers={"Authorization": f"Bearer {current_token}"},
+                                                    timeout=15,
+                                                )
+                                                st.write(f"Redirect status: {follow_resp.status_code}")
+                                                try:
+                                                    st.json(follow_resp.json())
+                                                except ValueError:
+                                                    st.write(follow_resp.text)
+                                                continue
+                                        try:
+                                            st.json(response.json())
+                                        except ValueError:
+                                            st.write(response.text)
+                                    except Exception as e:
+                                        st.error(f"Request failed: {str(e)}")
+                
             except Exception as e:
                 st.error(f"Error processing query: {str(e)}")
                 st.error("Please try again with a different query or check the logs for more details.")

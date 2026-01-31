@@ -131,6 +131,7 @@ class LlamaLocalDatamapRAG:
                 base_url=openai_base_url,
                 temperature=0.0,
                 max_tokens=10000,
+                top_p=0.2,
             )
             
             # Test the connection by making a simple embedding request
@@ -204,8 +205,8 @@ class LlamaLocalDatamapRAG:
                 return False
 
             # Split text into chunks
-            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 2000)
-            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 200)
+            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 30000)
+            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 1500)
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap
@@ -281,7 +282,7 @@ class LlamaLocalDatamapRAG:
             3. Authentication and authorization requirements
             4. API usage patterns and best practices
             5. Potential integration issues
-            6. Example API calls in """
+            6. Description of API Steps to be executed to achieve the query """
                 + format_type
                 + """ format with proper request structure.
             
@@ -330,29 +331,39 @@ class LlamaLocalDatamapRAG:
             # create prompt template
             prompt_template = (
                 """
-            Based on the following API specification, context, and query, provide a detailed answer to the analysis in output format, """
-                + format_type
-                + """ :
-            
+            Based on the following API specification, context, and query, return ONLY a valid JSON object.
+
             Query: """
                 + query
                 + """
-            
+
             Context: {context}
-            
-            Please execute internally the following comprehensive analysis including:
-            1. API endpoint structure and relationships
-            2. Request/response formats and data types
-            3. Authentication and authorization requirements
-            4. API usage patterns and best practices
-            5. Potential integration issues
-            6. Example API calls in """
-                + format_type
-                + """ format with proper request structure.
-            
-            In the end of the 6 steps, answer only in API call format, following the notation of """
-                + format_type
-                + """ , remove extra text and comments:
+
+            Output format (JSON only):
+            {{
+              "api_workflow": [
+                {{
+                  "step": 1,
+                  "action": "Short title",
+                  "description": "Why this step is needed",
+                  "request": {{
+                    "method": "GET|POST|PUT|DELETE|PATCH",
+                    "endpoint": "/path/{{param}}",
+                    "headers": {{
+                      "Authorization": "Bearer {{access_token}}"
+                    }},
+                    "body": {{ }}
+                  }}
+                }}
+              ]
+            }}
+
+            Requirements:
+            - Return JSON only, no extra text or markdown.
+            - Use "api_workflow" as the top-level key.
+            - Provide 4, 5, 6 or 7 steps aligned with the API spec.
+            - Include Authorization header when required.
+            - Use {{viewId}} placeholder when needed.
             """
             )
             
