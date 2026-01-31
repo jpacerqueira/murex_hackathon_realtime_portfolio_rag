@@ -132,7 +132,6 @@ class LlamaLocalDatamapRAG:
                 temperature=0.0,
                 max_tokens=10000,
                 top_p=0.2,
-                top_k=10,
             )
             
             # Test the connection by making a simple embedding request
@@ -341,30 +340,30 @@ class LlamaLocalDatamapRAG:
             Context: {context}
 
             Output format (JSON only):
-            {
+            {{
               "api_workflow": [
-                {
+                {{
                   "step": 1,
                   "action": "Short title",
                   "description": "Why this step is needed",
-                  "request": {
+                  "request": {{
                     "method": "GET|POST|PUT|DELETE|PATCH",
-                    "endpoint": "/path/{param}",
-                    "headers": {
+                    "endpoint": "/path/{{param}}",
+                    "headers": {{
                       "Authorization": "Bearer {{access_token}}"
-                    },
-                    "body": { }
-                  }
-                }
+                    }},
+                    "body": {{ }}
+                  }}
+                }}
               ]
-            }
+            }}
 
             Requirements:
             - Return JSON only, no extra text or markdown.
             - Use "api_workflow" as the top-level key.
             - Provide 4, 5, 6 or 7 steps aligned with the API spec.
             - Include Authorization header when required.
-            - Use {viewId} placeholder when needed.
+            - Use {{viewId}} placeholder when needed.
             """
             )
             
