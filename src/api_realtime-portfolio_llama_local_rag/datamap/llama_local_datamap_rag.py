@@ -130,7 +130,9 @@ class LlamaLocalDatamapRAG:
                 api_key=api_key,
                 base_url=openai_base_url,
                 temperature=0.0,
-                max_tokens=120000,
+                max_tokens=10000,
+                top_p=0.2,
+                top_k=10,
             )
             
             # Test the connection by making a simple embedding request
@@ -204,8 +206,8 @@ class LlamaLocalDatamapRAG:
                 return False
 
             # Split text into chunks
-            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 40000)
-            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 20)
+            chunk_size = _get_env_int("LLAMA_EMBEDDING_CHUNK_SIZE", 30000)
+            chunk_overlap = _get_env_int("LLAMA_EMBEDDING_CHUNK_OVERLAP", 1500)
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap
