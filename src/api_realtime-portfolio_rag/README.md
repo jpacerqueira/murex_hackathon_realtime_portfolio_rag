@@ -4,6 +4,8 @@ This application provides a RAG-based API specification and analysis system for 
 
 ![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img1.png)
 ![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img2.png)
+![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img3.png)
+![Real-Time Portfolio](images/REAL-TIME-PORTFOLIO-img4.png)
 
 ## Prerequisites
 
