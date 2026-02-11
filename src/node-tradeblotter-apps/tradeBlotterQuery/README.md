@@ -4,7 +4,7 @@
 
 
 ![Trade Blotter MCP - Real-Time Portfolio](images/image1.png)
-![Trade Blotter MCP - Real-Time Portfolio](images/imagE2.png)
+![Trade Blotter MCP - Real-Time Portfolio](images/image2.png)
 
 
 This repo runs three containers on a shared Docker network (`mcp-hackathon`):
