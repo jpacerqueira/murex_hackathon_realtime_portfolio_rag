@@ -33,7 +33,8 @@ From the repo root:
 ```
 export GEMINI_API_KEY=your_api_key
 export GOOGLE_API_KEY=your_api_key
-export 
+export GEMINI_INFERENCE_MODEL=gemini-3-flash-preview
+export GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
 docker compose up --build
 ```
 
