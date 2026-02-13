@@ -7,6 +7,7 @@ const emailResultButton = document.getElementById("emailResult");
 const clearChatButton = document.getElementById("clearChat");
 
 let lastAssistantMessage = "";
+const chatHistory = [];
 
 function formatJson(data) {
   if (typeof data === "string") {
@@ -51,8 +52,19 @@ function appendMessage(role, content) {
   if (role === "assistant") {
     lastAssistantMessage = content;
   }
+
+  chatHistory.push({ role, content });
 }
 
+function updateLastAssistantMessage(content) {
+  for (let i = chatHistory.length - 1; i >= 0; i -= 1) {
+    if (chatHistory[i].role === "assistant") {
+      chatHistory[i] = { role: "assistant", content };
+      return;
+    }
+  }
+  chatHistory.push({ role: "assistant", content });
+}
 function coercePythonDictToJson(text) {
   if (!text || typeof text !== "string") {
     return null;
@@ -144,10 +156,14 @@ async function loadDiscovery(action) {
 }
 
 async function handleGeminiMessage(message) {
+  const context = chatHistory
+    .filter((entry) => entry.content && entry.content !== "Working on that...")
+    .slice(-10)
+    .map((entry) => ({ role: entry.role, content: entry.content }));
   const result = await request("/api/llm/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ message, context })
   });
 
   if (result.toolCall) {
@@ -295,9 +311,11 @@ document.getElementById("sendMessage").addEventListener("click", async () => {
     const response = await handleUserMessage(message);
     chatWindow.lastChild.querySelector(".bubble").textContent = response;
     lastAssistantMessage = response;
+    updateLastAssistantMessage(response);
   } catch (error) {
     chatWindow.lastChild.querySelector(".bubble").textContent = `Error: ${error.message}`;
     lastAssistantMessage = `Error: ${error.message}`;
+    updateLastAssistantMessage(lastAssistantMessage);
   }
 });
 
@@ -325,6 +343,7 @@ emailResultButton.addEventListener("click", () => {
 clearChatButton.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   lastAssistantMessage = "";
+  chatHistory.length = 0;
 });
 
 appendMessage("assistant", "Hello! Ask about trade views, schemas, or query trades. Example: list trade views.");

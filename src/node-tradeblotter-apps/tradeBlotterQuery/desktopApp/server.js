@@ -43,7 +43,13 @@ async function proxyRequest(method, urlPath, body) {
   return payload;
 }
 
-function buildGeminiPrompt(toolsPayload, userMessage) {
+function buildGeminiPrompt(toolsPayload, userMessage, context) {
+  const contextLines = Array.isArray(context)
+    ? context
+        .slice(-10)
+        .map((entry) => `${entry.role || "user"}: ${entry.content}`)
+        .join("\n")
+    : "";
   return [
     "You are an assistant that selects exactly one MCP tool call for the trade blotter.",
     "Respond ONLY with JSON and no extra text.",
@@ -53,6 +59,9 @@ function buildGeminiPrompt(toolsPayload, userMessage) {
     "- Use only tools listed in the tools JSON.",
     "- If no tool applies, set tool to null and explain in message.",
     "- If a trade query requires a view_id and it is missing, ask for it in message.",
+    "",
+    "Conversation context:",
+    contextLines || "(none)",
     "",
     "Available tools JSON:",
     JSON.stringify(toolsPayload),
@@ -187,6 +196,7 @@ app.post("/api/llm/gemini", async (req, res) => {
       res.status(400).json({ error: "Missing message in request body." });
       return;
     }
+    const context = Array.isArray(req.body?.context) ? req.body.context : [];
 
     const toolsPayload = await proxyRequest("GET", "/tools");
     const toolsList = Array.isArray(toolsPayload)
@@ -196,7 +206,7 @@ app.post("/api/llm/gemini", async (req, res) => {
         : [];
     const toolNames = new Set(toolsList.map((tool) => tool.name));
 
-    const prompt = buildGeminiPrompt(toolsPayload, message);
+    const prompt = buildGeminiPrompt(toolsPayload, message, context);
     const modelText = await callGemini(prompt);
     const modelJson = extractJsonFromText(modelText);
 
