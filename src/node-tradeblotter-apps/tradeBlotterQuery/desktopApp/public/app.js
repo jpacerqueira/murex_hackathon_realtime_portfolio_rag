@@ -7,7 +7,6 @@ const chatInput = document.getElementById("chatInput");
 const healthStatus = document.getElementById("healthStatus");
 const toggleMcpPanelButton = document.getElementById("toggleMcpPanel");
 const mcpPanel = document.getElementById("mcpPanel");
-const emailResultButton = document.getElementById("emailResult");
 const summarizeChatButton = document.getElementById("summarizeChat");
 const clearChatButton = document.getElementById("clearChat");
 
@@ -750,33 +749,6 @@ document.getElementById("approveResultsForEmail").addEventListener("click", () =
 document.getElementById("openInOutlookGmail").addEventListener("click", () => {
   if (lastApprovedMailtoUrl) {
     window.open(lastApprovedMailtoUrl, "_blank", "noopener,noreferrer");
-  }
-});
-
-emailResultButton.addEventListener("click", () => {
-  if (!lastAssistantMessage) {
-    appendMessage("assistant", "No assistant response to email yet.");
-    return;
-  }
-  const subject = encodeURIComponent("Trade Blotter MCP Result");
-  const htmlBody = lastAssistantHtml
-    || buildHtmlFromJsonText(lastAssistantMessage)
-    || `<pre>${escapeHtml(lastAssistantMessage)}</pre>`;
-  const previewWindow = window.open("", "_blank", "noopener");
-  if (previewWindow) {
-    previewWindow.document.write(`
-      <html>
-        <head><title>Trade Blotter MCP Email</title></head>
-        <body style="margin:20px;">
-          <h3 style="font-family:Arial,sans-serif;">Email Preview (HTML)</h3>
-          ${htmlBody}
-        </body>
-      </html>
-    `);
-    previewWindow.document.close();
-  } else {
-    const body = encodeURIComponent(lastAssistantMessage);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 });
 
