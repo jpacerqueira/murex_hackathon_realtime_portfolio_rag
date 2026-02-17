@@ -336,9 +336,10 @@ function buildHtmlFromJsonText(text) {
   `;
 }
 
-const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id"]; //, "data"];
+const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
+const SPACE9S = "         "; // 9 spaces for data columns in approved email output
 
-/** Build cleaned HTML for "Approve results for email": variables table + data table (no id/view_id). */
+/** Build cleaned HTML for "Approve results for email": variables table + data table + data as email (9 spaces). */
 function buildApprovedResultsHtml(parsed) {
   if (!parsed || typeof parsed !== "object") return "";
   const metaKeys = ["label", "description", "limit", "total", "staleDataTimestamp", "schema"];
@@ -361,15 +362,34 @@ function buildApprovedResultsHtml(parsed) {
       <tbody>${varsRows}</tbody>
     </table>`;
   let dataTable = "";
+  let dataEmailBlock = "";
   if (Array.isArray(data) && data.length > 0) {
     dataTable = `
     <h4 style="margin:0 0 8px;">Data</h4>
     ${buildGenericTableHtml(data, 500)}`;
+    const headers = Array.from(
+      data.reduce((set, row) => {
+        Object.keys(row || {}).forEach((k) => set.add(k));
+        return set;
+      }, new Set())
+    );
+    const dataLines = [
+      "Data:",
+      headers.join(SPACE9S),
+      ...data.slice(0, 100).map((row) =>
+        headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE9S)
+      )
+    ];
+    if (data.length > 100) dataLines.push(`... ${data.length - 100} more rows`);
+    dataEmailBlock = `
+    <h4 style="margin:0.75rem 0 8px;">Data (email output, 9 spaces)</h4>
+    <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;">${escapeHtml(dataLines.join("\n"))}</pre>`;
   }
   return `
     <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;">
       ${varsTable || ""}
       ${dataTable}
+      ${dataEmailBlock}
     </div>`;
 }
 
@@ -387,7 +407,6 @@ function buildApprovedResultsText(parsed) {
     lines.push(`${key}: ${display}`);
   });
   const data = parsed.data;
-  const SPACE9S = "         ";
   if (Array.isArray(data) && data.length > 0) {
     lines.push("", "Data:");
     const headers = Array.from(
