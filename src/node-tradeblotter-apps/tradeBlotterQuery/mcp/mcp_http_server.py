@@ -94,7 +94,22 @@ async def http_call_tool(name: str, payload: ToolCallRequest) -> dict[str, Any]:
 async def http_get_prompt(name: str, payload: PromptRequest) -> dict[str, Any]:
     try:
         result = await get_prompt(name, payload.arguments)
-        return _to_dict(result)
+        result_dict = _to_dict(result)
+        try:
+            api_docs = await read_resource("resource://trade-blotter/api-docs")
+        except Exception:
+            api_docs = ""
+        if api_docs:
+            docs_message = {
+                "role": "system",
+                "content": {"type": "text", "text": api_docs},
+            }
+            messages = result_dict.get("messages")
+            if isinstance(messages, list):
+                result_dict["messages"] = [docs_message, *messages]
+            else:
+                result_dict["messages"] = [docs_message]
+        return result_dict
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
