@@ -521,7 +521,7 @@ function extractFilters(text) {
 
 async function handleMcpHeuristics(message) {
   const lower = message.toLowerCase();
-  const viewId = extractViewId(message) || "8ff46242-dffa-447e-b221-8c328d785906";
+  const viewId = extractViewId(message);
   const filters = extractFilters(message);
 
   if (lower.includes("health")) {
@@ -534,7 +534,10 @@ async function handleMcpHeuristics(message) {
     return formatJson(result);
   }
 
-  if (lower.includes("schema") && viewId) {
+  if (lower.includes("schema")) {
+    if (!viewId) {
+      return "Please specify a view ID (e.g. include a UUID in your message) or say \"list trade views\" to see available views.";
+    }
     const result = await request(`/api/tool/get_view_schema`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -561,6 +564,9 @@ async function handleMcpHeuristics(message) {
   }
 
   if (lower.includes("trade") || lower.includes("trades") || lower.includes("query")) {
+    if (!viewId) {
+      return "Please specify a view ID (e.g. include a UUID in your message) or say \"list trade views\" to see available views.";
+    }
     const result = await request(`/api/tool/query_trades`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

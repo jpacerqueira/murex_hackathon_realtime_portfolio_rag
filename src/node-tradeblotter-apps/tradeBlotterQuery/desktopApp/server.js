@@ -18,7 +18,6 @@ const geminiContextMaxOutputTokens = Number.parseInt(
   process.env.GEMINI_CONTEXT_MAX_OUTPUT_TOKENS ?? "512",
   10
 );
-const defaultViewId = process.env.DEFAULT_VIEW_ID || "8ff46242-dffa-447e-b221-8c328d785906";
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -248,9 +247,6 @@ app.post("/api/llm/gemini", async (req, res) => {
     }
 
     const toolArgs = modelJson.arguments || {};
-    if (["query_trades", "get_view_schema"].includes(modelJson.tool) && !toolArgs.view_id) {
-      toolArgs.view_id = defaultViewId;
-    }
 
     const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
       arguments: toolArgs
