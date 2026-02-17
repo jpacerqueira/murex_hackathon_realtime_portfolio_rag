@@ -18,7 +18,7 @@
         margin: 0 auto;
         padding: 2rem 1.5rem 3rem;
         display: grid;
-        grid-template-columns: 280px 1fr;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
       }
       header {
@@ -189,25 +189,6 @@
         </div>
       </header>
 
-      <aside class="panel" id="mcpPanel">
-        <h2>MCP Control</h2>
-        <p>Use the tools, resources, and prompts available from the MCP server.</p>
-        <div class="toolbar">
-          <button class="button-secondary" data-action="tools">List Tools</button>
-          <button class="button-secondary" data-action="resources">List Resources</button>
-          <button class="button-secondary" data-action="prompts">List Prompts</button>
-        </div>
-        <pre id="discoveryOutput">Click a button to load MCP metadata.</pre>
-
-        <div class="divider"></div>
-
-        <h2>Read Resource</h2>
-        <label for="resourceUri">Resource URI</label>
-        <input id="resourceUri" placeholder="resource://trade-blotter/api-docs" />
-        <button id="readResource">Read Resource</button>
-        <pre id="resourceOutput">Resource content appears here.</pre>
-      </aside>
-
       <main class="panel chat">
         <div>
           <h2>DXC Blotter Minds Chat</h2>
@@ -228,6 +209,27 @@
           <button class="button-secondary" id="summarizeChat">Summarize chat</button>
           <button class="button-secondary" id="clearChat">Clear chat</button>
         </div>
+
+        <div class="divider"></div>
+
+        <section class="panel" id="mcpPanel">
+          <h2>MCP Control</h2>
+          <p>Use the tools, resources, and prompts available from the MCP server.</p>
+          <div class="toolbar">
+            <button class="button-secondary" data-action="tools">List Tools</button>
+            <button class="button-secondary" data-action="resources">List Resources</button>
+            <button class="button-secondary" data-action="prompts">List Prompts</button>
+          </div>
+          <pre id="discoveryOutput">Click a button to load MCP metadata.</pre>
+
+          <div class="divider"></div>
+
+          <h2>Read Resource</h2>
+          <label for="resourceUri">Resource URI</label>
+          <input id="resourceUri" placeholder="resource://trade-blotter/api-docs" />
+          <button id="readResource">Read Resource</button>
+          <pre id="resourceOutput">Resource content appears here.</pre>
+        </section>
 
       </main>
     </div>
