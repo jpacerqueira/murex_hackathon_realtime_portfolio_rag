@@ -362,34 +362,15 @@ function buildApprovedResultsHtml(parsed) {
       <tbody>${varsRows}</tbody>
     </table>`;
   let dataTable = "";
-  let dataEmailBlock = "";
   if (Array.isArray(data) && data.length > 0) {
     dataTable = `
     <h4 style="margin:0 0 8px;">Data</h4>
     ${buildGenericTableHtml(data, 500)}`;
-    const headers = Array.from(
-      data.reduce((set, row) => {
-        Object.keys(row || {}).forEach((k) => set.add(k));
-        return set;
-      }, new Set())
-    );
-    const dataLines = [
-      "Data:",
-      headers.join(SPACE2S),
-      ...data.slice(0, 100).map((row) =>
-        headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE2S)
-      )
-    ];
-    if (data.length > 100) dataLines.push(`... ${data.length - 100} more rows`);
-    dataEmailBlock = `
-    <h4 style="margin:0.75rem 0 8px;">Data (email output, 2 spaces)</h4>
-    <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;">${escapeHtml(dataLines.join("\n"))}</pre>`;
   }
   return `
     <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;">
       ${varsTable || ""}
       ${dataTable}
-      ${dataEmailBlock}
     </div>`;
 }
 
