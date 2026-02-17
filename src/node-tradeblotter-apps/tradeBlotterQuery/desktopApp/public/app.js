@@ -337,7 +337,8 @@ function buildHtmlFromJsonText(text) {
 }
 
 const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
-const SPACE2S = "  "; // 2 spaces for data columns in approved email output
+const SPACE2S = "  "; // 2 spaces for data columns (in-app)
+const EMAIL_DATA_SEP = "\t"; // tab between data columns in Outlook/Gmail email body
 
 /** Build cleaned HTML for "Approve results for email": variables table + data table + data as email (9 spaces). */
 function buildApprovedResultsHtml(parsed) {
@@ -396,9 +397,9 @@ function buildApprovedResultsText(parsed) {
         return set;
       }, new Set())
     );
-    lines.push(headers.join(SPACE2S));
+    lines.push(headers.join(EMAIL_DATA_SEP));
     data.slice(0, 100).forEach((row) => {
-      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE2S));
+      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(EMAIL_DATA_SEP));
     });
     if (data.length > 100) lines.push(`... ${data.length - 100} more rows`);
   }
