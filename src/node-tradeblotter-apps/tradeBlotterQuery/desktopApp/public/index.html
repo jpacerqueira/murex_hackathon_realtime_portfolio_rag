@@ -113,6 +113,23 @@
         background: rgba(73, 149, 255, 0.1);
         border-color: rgba(73, 149, 255, 0.35);
       }
+      .message.email-preview .bubble {
+        background: rgba(73, 149, 255, 0.08);
+        border-color: rgba(73, 149, 255, 0.3);
+        white-space: normal;
+      }
+      .message.email-preview .bubble pre {
+        white-space: pre-wrap;
+      }
+      .email-preview-caption {
+        margin: 0 0 0.75rem;
+        font-size: 0.85rem;
+        color: var(--dxc-muted);
+      }
+      #emailPreviewContent {
+        max-height: 320px;
+        overflow: auto;
+      }
       .composer {
         display: flex;
         gap: 0.75rem;
@@ -198,6 +215,14 @@
       #resourceContentOutput {
         max-height: 360px;
       }
+      .iterate-hint {
+        border-left: 4px solid var(--dxc-accent);
+      }
+      .iterate-hint-text {
+        margin-top: 0;
+        color: var(--dxc-muted);
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body class="stApp">
@@ -226,9 +251,28 @@
         </div>
 
         <div class="toolbar">
+          <button class="button-secondary" id="approveResultsForEmail">Approve results for email</button>
           <button class="button-secondary" id="emailResult">Email last answer</button>
           <button class="button-secondary" id="summarizeChat">Summarize chat</button>
           <button class="button-secondary" id="clearChat">Clear chat</button>
+        </div>
+
+        <div id="emailPreviewInApp" class="message email-preview" style="display: none;">
+          <div class="role">Email</div>
+          <div class="bubble email-bubble">
+            <p class="email-preview-caption">Preview — open in Outlook or Gmail when ready.</p>
+            <div id="emailPreviewContent"></div>
+            <div class="toolbar" style="margin-top: 0.75rem;">
+              <button class="button-secondary" id="openInOutlookGmail">Open in Outlook / Gmail</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="iterateHint" class="panel iterate-hint" style="display: none;">
+          <p class="iterate-hint-text"></p>
+          <div class="toolbar">
+            <button class="button-secondary" id="useAsNextRequest">Use as my next question</button>
+          </div>
         </div>
 
         <div class="divider"></div>

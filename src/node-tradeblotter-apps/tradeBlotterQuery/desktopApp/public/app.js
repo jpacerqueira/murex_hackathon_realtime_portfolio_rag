@@ -24,6 +24,36 @@ function formatJson(data) {
   return JSON.stringify(data, null, 2);
 }
 
+/** Returns true if the assistant response looks like JSON / structured data. */
+function isJsonLikeResponse(text) {
+  if (text == null || typeof text !== "string") return false;
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if ((trimmed.startsWith("{") && trimmed.includes("}")) || (trimmed.startsWith("[") && trimmed.includes("]"))) {
+    try {
+      JSON.parse(trimmed);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+const iterateHintEl = document.getElementById("iterateHint");
+const iterateHintTextEl = document.querySelector("#iterateHint .iterate-hint-text");
+
+function showIterateHint() {
+  if (!iterateHintEl || !iterateHintTextEl) return;
+  iterateHintTextEl.textContent =
+    "This reply isn’t structured (JSON) data. You can submit it as your next message to progress and iterate with multiple levels of reasoning, with you validating each step (man-in-the-middle).";
+  iterateHintEl.style.display = "";
+}
+
+function hideIterateHint() {
+  if (iterateHintEl) iterateHintEl.style.display = "none";
+}
+
 async function request(path, options = {}) {
   const response = await fetch(path, options);
   const text = await response.text();
@@ -307,6 +337,74 @@ function buildHtmlFromJsonText(text) {
   `;
 }
 
+const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
+
+/** Build cleaned HTML for "Approve results for email": variables table + data table (no id/view_id). */
+function buildApprovedResultsHtml(parsed) {
+  if (!parsed || typeof parsed !== "object") return "";
+  const metaKeys = ["label", "description", "limit", "total", "staleDataTimestamp", "schema"];
+  const data = parsed.data;
+  const otherKeys = Object.keys(parsed).filter((k) => !APPROVED_EMAIL_EXCLUDE_KEYS.includes(k) && !metaKeys.includes(k));
+  const allMetaKeys = [...metaKeys, ...otherKeys];
+  const varsRows = allMetaKeys
+    .filter((key) => Object.prototype.hasOwnProperty.call(parsed, key) && !APPROVED_EMAIL_EXCLUDE_KEYS.includes(key))
+    .map((key) => {
+      const val = parsed[key];
+      const display = val == null || val === "" ? "—" : String(val);
+      return `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(key)}</td><td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(display)}</td></tr>`;
+    })
+    .join("");
+  const varsTable =
+    varsRows &&
+    `
+    <h4 style="margin:0 0 8px;">Variables</h4>
+    <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;margin-bottom:1rem;">
+      <tbody>${varsRows}</tbody>
+    </table>`;
+  let dataTable = "";
+  if (Array.isArray(data) && data.length > 0) {
+    dataTable = `
+    <h4 style="margin:0 0 8px;">Data</h4>
+    ${buildGenericTableHtml(data, 500)}`;
+  }
+  return `
+    <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;">
+      ${varsTable || ""}
+      ${dataTable}
+    </div>`;
+}
+
+/** Build plain text for email body from approved parsed result (no id/view_id). */
+function buildApprovedResultsText(parsed) {
+  if (!parsed || typeof parsed !== "object") return "";
+  const lines = ["Trade Blotter – Approved result", ""];
+  const metaKeys = ["label", "description", "limit", "total", "staleDataTimestamp", "schema"];
+  const otherKeys = Object.keys(parsed).filter((k) => !APPROVED_EMAIL_EXCLUDE_KEYS.includes(k) && !metaKeys.includes(k));
+  const allMetaKeys = [...metaKeys, ...otherKeys];
+  allMetaKeys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(parsed, key) || APPROVED_EMAIL_EXCLUDE_KEYS.includes(key)) return;
+    const val = parsed[key];
+    const display = val == null || val === "" ? "—" : String(val);
+    lines.push(`${key}: ${display}`);
+  });
+  const data = parsed.data;
+  if (Array.isArray(data) && data.length > 0) {
+    lines.push("", "Data:");
+    const headers = Array.from(
+      data.reduce((set, row) => {
+        Object.keys(row || {}).forEach((k) => set.add(k));
+        return set;
+      }, new Set())
+    );
+    lines.push(headers.join("\t"));
+    data.slice(0, 100).forEach((row) => {
+      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join("\t"));
+    });
+    if (data.length > 100) lines.push(`... ${data.length - 100} more rows`);
+  }
+  return lines.join("\n");
+}
+
 function formatGeminiToolResult(result) {
   const toolText = extractToolText(result.toolResult);
   const parsed = coercePythonDictToJson(toolText);
@@ -573,6 +671,7 @@ document.getElementById("sendMessage").addEventListener("click", async () => {
     return;
   }
   chatInput.value = "";
+  hideIterateHint();
   appendMessage("user", message);
   appendMessage("assistant", "Working on that...");
   try {
@@ -580,16 +679,76 @@ document.getElementById("sendMessage").addEventListener("click", async () => {
     chatWindow.lastChild.querySelector(".bubble").textContent = response;
     lastAssistantMessage = response;
     updateLastAssistantMessage(response);
+    if (!isJsonLikeResponse(response)) {
+      showIterateHint();
+    } else {
+      hideIterateHint();
+    }
   } catch (error) {
     chatWindow.lastChild.querySelector(".bubble").textContent = `Error: ${error.message}`;
     lastAssistantMessage = `Error: ${error.message}`;
     updateLastAssistantMessage(lastAssistantMessage);
+    hideIterateHint();
+  }
+});
+
+document.getElementById("useAsNextRequest").addEventListener("click", () => {
+  if (lastAssistantMessage) {
+    chatInput.value = lastAssistantMessage;
+    chatInput.focus();
+    hideIterateHint();
   }
 });
 
 chatInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
     document.getElementById("sendMessage").click();
+  }
+});
+
+function parseJsonOrPythonDict(text) {
+  if (text == null || typeof text !== "string") return null;
+  const trimmed = text.trim();
+  if (!trimmed || (!trimmed.startsWith("{") && !trimmed.startsWith("["))) return null;
+  const parsed = coercePythonDictToJson(text);
+  if (parsed != null) return parsed;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+}
+
+let lastApprovedMailtoUrl = "";
+
+document.getElementById("approveResultsForEmail").addEventListener("click", () => {
+  if (!lastAssistantMessage) {
+    appendMessage("assistant", "No assistant response to approve yet.");
+    return;
+  }
+  const parsed = parseJsonOrPythonDict(lastAssistantMessage);
+  if (!parsed || typeof parsed !== "object") {
+    appendMessage("assistant", "Last response is not JSON. Approve results for email only works when the output is JSON (e.g. trade data).");
+    return;
+  }
+  const approvedHtml = buildApprovedResultsHtml(parsed);
+  const approvedText = buildApprovedResultsText(parsed);
+  const subject = encodeURIComponent("Trade Blotter – Approved result");
+  const body = encodeURIComponent(approvedText);
+  lastApprovedMailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+
+  const emailPreviewInApp = document.getElementById("emailPreviewInApp");
+  const emailPreviewContent = document.getElementById("emailPreviewContent");
+  if (emailPreviewContent) emailPreviewContent.innerHTML = approvedHtml;
+  if (emailPreviewInApp) {
+    emailPreviewInApp.style.display = "";
+    emailPreviewInApp.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+});
+
+document.getElementById("openInOutlookGmail").addEventListener("click", () => {
+  if (lastApprovedMailtoUrl) {
+    window.open(lastApprovedMailtoUrl, "_blank", "noopener,noreferrer");
   }
 });
 
@@ -630,6 +789,12 @@ clearChatButton.addEventListener("click", () => {
   lastAssistantHtml = "";
   chatHistory.length = 0;
   chatSummary = "";
+  hideIterateHint();
+  const emailPreviewInApp = document.getElementById("emailPreviewInApp");
+  if (emailPreviewInApp) emailPreviewInApp.style.display = "none";
+  const emailPreviewContent = document.getElementById("emailPreviewContent");
+  if (emailPreviewContent) emailPreviewContent.innerHTML = "";
+  lastApprovedMailtoUrl = "";
 });
 
 appendMessage("assistant", "Hello! Ask about trade views, schemas, or query trades. Example: list trade views.");
