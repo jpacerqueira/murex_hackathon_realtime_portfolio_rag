@@ -547,7 +547,9 @@ emailResultButton.addEventListener("click", () => {
     return;
   }
   const subject = encodeURIComponent("Trade Blotter MCP Result");
-  const htmlBody = lastAssistantHtml || `<pre>${escapeHtml(lastAssistantMessage)}</pre>`;
+  const htmlBody = lastAssistantHtml
+    || buildHtmlFromJsonText(lastAssistantMessage)
+    || `<pre>${escapeHtml(lastAssistantMessage)}</pre>`;
   const previewWindow = window.open("", "_blank", "noopener");
   if (previewWindow) {
     previewWindow.document.write(`
