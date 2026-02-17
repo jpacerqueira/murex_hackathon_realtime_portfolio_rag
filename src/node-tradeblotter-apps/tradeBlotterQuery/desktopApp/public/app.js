@@ -1,5 +1,7 @@
 const discoveryOutput = document.getElementById("discoveryOutput");
 const resourceOutput = document.getElementById("resourceOutput");
+const resourcesListContainer = document.getElementById("resourcesListContainer");
+const resourceContentOutput = document.getElementById("resourceContentOutput");
 const chatWindow = document.getElementById("chatWindow");
 const chatInput = document.getElementById("chatInput");
 const healthStatus = document.getElementById("healthStatus");
@@ -501,6 +503,56 @@ toggleMcpPanelButton.addEventListener("click", () => {
   toggleMcpPanelButton.textContent = isHidden ? "Hide MCP Control" : "Unhide MCP Control";
 });
 
+async function loadResourcesList() {
+  resourcesListContainer.innerHTML = "";
+  resourceContentOutput.textContent = "Loading resources...";
+  try {
+    const data = await request("/api/resources");
+    const list = Array.isArray(data) ? data : data?.resources ?? [];
+    if (!list.length) {
+      resourceContentOutput.textContent = "No resources returned from server.";
+      return;
+    }
+    resourceContentOutput.textContent = "Click a resource to read it (Trade Blotter API Documentation = MCP guidance).";
+    list.forEach((res) => {
+      const uri = res.uri || res.name || "";
+      const name = res.name || uri || "Unnamed";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "resource-item button-secondary";
+      btn.textContent = name;
+      btn.title = uri;
+      btn.addEventListener("click", () => readResourceByUri(uri, resourceContentOutput));
+      resourcesListContainer.appendChild(btn);
+    });
+  } catch (error) {
+    resourceContentOutput.textContent = error.message;
+  }
+}
+
+function formatResourceContent(data) {
+  if (data == null) return "";
+  if (typeof data.content === "string") return data.content;
+  if (Array.isArray(data.content)) {
+    const part = data.content.find((p) => p?.type === "text" && p?.text);
+    return part ? part.text : formatJson(data);
+  }
+  return formatJson(data);
+}
+
+async function readResourceByUri(uri, outputEl) {
+  if (!uri || !outputEl) return;
+  outputEl.textContent = "Loading...";
+  try {
+    const data = await request(`/api/resource?uri=${encodeURIComponent(uri)}`);
+    outputEl.textContent = formatResourceContent(data);
+  } catch (error) {
+    outputEl.textContent = error.message;
+  }
+}
+
+document.getElementById("loadResourcesList").addEventListener("click", loadResourcesList);
+
 document.getElementById("readResource").addEventListener("click", async () => {
   const uri = document.getElementById("resourceUri").value.trim();
   if (!uri) {
@@ -509,7 +561,7 @@ document.getElementById("readResource").addEventListener("click", async () => {
   }
   try {
     const data = await request(`/api/resource?uri=${encodeURIComponent(uri)}`);
-    resourceOutput.textContent = formatJson(data);
+    resourceOutput.textContent = formatResourceContent(data);
   } catch (error) {
     resourceOutput.textContent = error.message;
   }

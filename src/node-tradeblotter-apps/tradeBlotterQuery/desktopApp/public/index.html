@@ -177,6 +177,27 @@
         overflow: auto;
         margin: 0.75rem 0 0;
       }
+      .resources-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0.75rem 0 0;
+      }
+      .resources-list .resource-item {
+        background: var(--dxc-surface-2);
+        border: 1px solid var(--dxc-border);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .resources-list .resource-item:hover {
+        border-color: var(--dxc-accent);
+        color: var(--dxc-accent);
+      }
+      #resourceContentOutput {
+        max-height: 360px;
+      }
     </style>
   </head>
   <body class="stApp">
@@ -221,6 +242,16 @@
             <button class="button-secondary" data-action="prompts">List Prompts</button>
           </div>
           <pre id="discoveryOutput">Click a button to load MCP metadata.</pre>
+
+          <div class="divider"></div>
+
+          <h2>MCP Resources (API Documentation &amp; Guidance)</h2>
+          <p>List resources from the MCP server, then read one to view the Trade Blotter API Documentation or other guidance.</p>
+          <div class="toolbar">
+            <button class="button-secondary" id="loadResourcesList">Load resources list</button>
+          </div>
+          <div id="resourcesListContainer" class="resources-list"></div>
+          <pre id="resourceContentOutput">Click a resource above to read it via the server (read_resource).</pre>
 
           <div class="divider"></div>
 
