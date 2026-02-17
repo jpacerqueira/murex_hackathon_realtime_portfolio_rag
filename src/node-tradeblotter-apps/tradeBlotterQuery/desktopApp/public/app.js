@@ -599,29 +599,24 @@ emailResultButton.addEventListener("click", () => {
     return;
   }
   const subject = encodeURIComponent("Trade Blotter MCP Result");
-  const body = encodeURIComponent(lastAssistantMessage);
-  const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
   const htmlBody = lastAssistantHtml
     || buildHtmlFromJsonText(lastAssistantMessage)
     || `<pre>${escapeHtml(lastAssistantMessage)}</pre>`;
-  const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+  const previewWindow = window.open("", "_blank", "noopener");
   if (previewWindow) {
     previewWindow.document.write(`
       <html>
-        <head><title>Trade Blotter – Email</title></head>
-        <body style="margin:20px;font-family:Arial,sans-serif;">
-          <h3>Email last answer</h3>
-          <p><a href="${mailtoUrl}" style="font-weight:600;">Open in email client</a> (opens your mail app in a new window)</p>
-          <hr style="margin:1rem 0;" />
-          <h4>Preview</h4>
+        <head><title>Trade Blotter MCP Email</title></head>
+        <body style="margin:20px;">
+          <h3 style="font-family:Arial,sans-serif;">Email Preview (HTML)</h3>
           ${htmlBody}
         </body>
       </html>
     `);
     previewWindow.document.close();
-    previewWindow.focus();
   } else {
-    window.open(mailtoUrl, "_blank", "noopener,noreferrer");
+    const body = encodeURIComponent(lastAssistantMessage);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 });
 
