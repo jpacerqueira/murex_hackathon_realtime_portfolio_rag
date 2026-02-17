@@ -10,6 +10,7 @@ const port = Number(process.env.PORT || 5173);
 const mcpBaseUrl = process.env.MCP_HTTP_BASE_URL || "http://mcp-server:7001";
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3-flash-preview";
+const geminiTemperature = Number.parseFloat(process.env.GEMINI_TEMPERATURE ?? "1.0");
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -100,7 +101,10 @@ async function callGemini(prompt) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: Number.isFinite(geminiTemperature) ? geminiTemperature : 1.0
+      }
     })
   });
   const payload = await response.json();
