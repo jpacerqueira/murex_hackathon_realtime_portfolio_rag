@@ -337,7 +337,7 @@ function buildHtmlFromJsonText(text) {
 }
 
 const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
-const SPACE9S = "         "; // 9 spaces for data columns in approved email output
+const SPACE2S = "  "; // 2 spaces for data columns in approved email output
 
 /** Build cleaned HTML for "Approve results for email": variables table + data table + data as email (9 spaces). */
 function buildApprovedResultsHtml(parsed) {
@@ -375,14 +375,14 @@ function buildApprovedResultsHtml(parsed) {
     );
     const dataLines = [
       "Data:",
-      headers.join(SPACE9S),
+      headers.join(SPACE2S),
       ...data.slice(0, 100).map((row) =>
-        headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE9S)
+        headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE2S)
       )
     ];
     if (data.length > 100) dataLines.push(`... ${data.length - 100} more rows`);
     dataEmailBlock = `
-    <h4 style="margin:0.75rem 0 8px;">Data (email output, 9 spaces)</h4>
+    <h4 style="margin:0.75rem 0 8px;">Data (email output, 2 spaces)</h4>
     <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;">${escapeHtml(dataLines.join("\n"))}</pre>`;
   }
   return `
@@ -415,9 +415,9 @@ function buildApprovedResultsText(parsed) {
         return set;
       }, new Set())
     );
-    lines.push(headers.join(SPACE9S));
+    lines.push(headers.join(SPACE2S));
     data.slice(0, 100).forEach((row) => {
-      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE9S));
+      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE2S));
     });
     if (data.length > 100) lines.push(`... ${data.length - 100} more rows`);
   }
