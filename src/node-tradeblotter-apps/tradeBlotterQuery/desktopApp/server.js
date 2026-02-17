@@ -11,8 +11,13 @@ const mcpBaseUrl = process.env.MCP_HTTP_BASE_URL || "http://mcp-server:7001";
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3-pro-preview";
 const geminiTemperature = Number.parseFloat(process.env.GEMINI_TEMPERATURE ?? "1.0");
-const geminiContextModel = process.env.GEMINI_CONTEXT_MODEL || "gemini-pro";
-const geminiContextTemperature = Number.parseFloat(process.env.GEMINI_CONTEXT_TEMPERATURE ?? "0.2");
+const geminiMaxOutputTokens = Number.parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? "8192", 10);
+const geminiContextModel = process.env.GEMINI_CONTEXT_MODEL || "gemini-3-pro-preview";
+const geminiContextTemperature = Number.parseFloat(process.env.GEMINI_CONTEXT_TEMPERATURE ?? "1.0");
+const geminiContextMaxOutputTokens = Number.parseInt(
+  process.env.GEMINI_CONTEXT_MAX_OUTPUT_TOKENS ?? "512",
+  10
+);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -221,7 +226,9 @@ app.post("/api/llm/gemini", async (req, res) => {
     const toolNames = new Set(toolsList.map((tool) => tool.name));
 
     const prompt = buildGeminiPrompt(toolsPayload, message, context, summary);
-    const modelText = await callGemini(prompt);
+    const modelText = await callGemini(prompt, {
+      maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192
+    });
     const modelJson = extractJsonFromText(modelText);
 
     if (!modelJson) {
@@ -285,7 +292,7 @@ app.post("/api/llm/summarize", async (req, res) => {
     const modelText = await callGemini(prompt, {
       model: geminiContextModel,
       temperature: Number.isFinite(geminiContextTemperature) ? geminiContextTemperature : 0.2,
-      maxOutputTokens: 256
+      maxOutputTokens: Number.isFinite(geminiContextMaxOutputTokens) ? geminiContextMaxOutputTokens : 512
     });
 
     res.json({ summary: modelText });

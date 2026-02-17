@@ -8,6 +8,7 @@ const summarizeChatButton = document.getElementById("summarizeChat");
 const clearChatButton = document.getElementById("clearChat");
 
 let lastAssistantMessage = "";
+let lastAssistantHtml = "";
 const chatHistory = [];
 let chatSummary = "";
 let isSummarizing = false;
@@ -57,6 +58,18 @@ function appendMessage(role, content) {
   }
 
   chatHistory.push({ role, content });
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function updateLastAssistantMessage(content) {
@@ -174,6 +187,38 @@ function formatTradeRows(data, maxRows = 10) {
   return lines.join("\n");
 }
 
+function buildTradeTableHtml(data, maxRows = 20) {
+  if (!data || !Array.isArray(data.data)) {
+    return "";
+  }
+  const rows = data.data.slice(0, maxRows);
+  const headers = ["Instrument", "Amount", "Status", "Maturity", "Counterparty"];
+  const headerHtml = headers
+    .map((header) => `<th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">${escapeHtml(header)}</th>`)
+    .join("");
+  const bodyHtml = rows
+    .map((row) => {
+      const cells = [
+        row.Instrument || row.instrument || "Unknown",
+        row.Amount ?? row.amount ?? "n/a",
+        row.Status || row.status || "n/a",
+        row.Maturity || row.maturity || "n/a",
+        row.Counterparty || row.counterparty || "n/a"
+      ];
+      const cellsHtml = cells
+        .map((cell) => `<td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(cell)}</td>`)
+        .join("");
+      return `<tr>${cellsHtml}</tr>`;
+    })
+    .join("");
+  return `
+    <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;">
+      <thead><tr>${headerHtml}</tr></thead>
+      <tbody>${bodyHtml}</tbody>
+    </table>
+  `;
+}
+
 function formatGeminiToolResult(result) {
   const toolText = extractToolText(result.toolResult);
   const parsed = coercePythonDictToJson(toolText);
@@ -192,7 +237,25 @@ function formatGeminiToolResult(result) {
     summary.push("Sample trades:");
     summary.push(rows);
   }
-  return summary.length ? summary.join("\n") : null;
+  const text = summary.length ? summary.join("\n") : null;
+  if (!text) {
+    return null;
+  }
+  const htmlSummary = [
+    parsed.label || parsed.id
+      ? `<p style="margin:0 0 6px;"><strong>View:</strong> ${escapeHtml(parsed.label || "Trade View")} (${escapeHtml(parsed.id || "n/a")})</p>`
+      : "",
+    parsed.total !== undefined
+      ? `<p style="margin:0 0 10px;"><strong>Total trades:</strong> ${escapeHtml(parsed.total)}</p>`
+      : "",
+    parsed.data ? `<div style="margin-top:10px;">${buildTradeTableHtml(parsed)}</div>` : ""
+  ].join("");
+  const html = `
+    <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;">
+      ${htmlSummary}
+    </div>
+  `;
+  return { text, html };
 }
 
 async function loadHealth() {
@@ -228,7 +291,8 @@ async function handleGeminiMessage(message) {
   if (result.toolCall) {
     const cleaned = formatGeminiToolResult(result);
     if (cleaned) {
-      return cleaned;
+      lastAssistantHtml = cleaned.html || "";
+      return cleaned.text;
     }
     const fallbackSections = [];
     if (result.message) {
@@ -237,13 +301,16 @@ async function handleGeminiMessage(message) {
     fallbackSections.push(`Tool: ${result.toolCall.name}`);
     fallbackSections.push(`Arguments:\n${formatJson(result.toolCall.arguments)}`);
     fallbackSections.push(`Result:\n${formatJson(result.toolResult)}`);
+    lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(fallbackSections.join("\n\n"))}</pre>`;
     return fallbackSections.join("\n\n");
   }
 
   if (result.message) {
+    lastAssistantHtml = `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
     return result.message;
   }
 
+  lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(formatJson(result))}</pre>`;
   return formatJson(result);
 }
 
@@ -390,12 +457,22 @@ emailResultButton.addEventListener("click", () => {
     return;
   }
   const subject = encodeURIComponent("Trade Blotter MCP Result");
-  const body = encodeURIComponent(lastAssistantMessage);
-  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
-  const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
-  const opened = window.open(gmailUrl, "_blank", "noopener");
-  if (!opened) {
-    window.location.href = mailtoUrl;
+  const htmlBody = lastAssistantHtml || `<pre>${escapeHtml(lastAssistantMessage)}</pre>`;
+  const previewWindow = window.open("", "_blank", "noopener");
+  if (previewWindow) {
+    previewWindow.document.write(`
+      <html>
+        <head><title>Trade Blotter MCP Email</title></head>
+        <body style="margin:20px;">
+          <h3 style="font-family:Arial,sans-serif;">Email Preview (HTML)</h3>
+          ${htmlBody}
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
+  } else {
+    const body = encodeURIComponent(lastAssistantMessage);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 });
 
@@ -406,6 +483,7 @@ summarizeChatButton.addEventListener("click", () => {
 clearChatButton.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   lastAssistantMessage = "";
+  lastAssistantHtml = "";
   chatHistory.length = 0;
   chatSummary = "";
 });
