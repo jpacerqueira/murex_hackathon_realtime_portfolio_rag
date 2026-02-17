@@ -9,7 +9,15 @@ const app = express();
 const port = Number(process.env.PORT || 5173);
 const mcpBaseUrl = process.env.MCP_HTTP_BASE_URL || "http://mcp-server:7001";
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3-flash-preview";
+const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3-pro-preview";
+const geminiTemperature = Number.parseFloat(process.env.GEMINI_TEMPERATURE ?? "1.0");
+const geminiMaxOutputTokens = Number.parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? "8192", 10);
+const geminiContextModel = process.env.GEMINI_CONTEXT_MODEL || "gemini-3-pro-preview";
+const geminiContextTemperature = Number.parseFloat(process.env.GEMINI_CONTEXT_TEMPERATURE ?? "1.0");
+const geminiContextMaxOutputTokens = Number.parseInt(
+  process.env.GEMINI_CONTEXT_MAX_OUTPUT_TOKENS ?? "512",
+  10
+);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -43,16 +51,41 @@ async function proxyRequest(method, urlPath, body) {
   return payload;
 }
 
-function buildGeminiPrompt(toolsPayload, userMessage, context) {
+function formatPromptMessages(messages) {
+  if (!Array.isArray(messages)) {
+    return "";
+  }
+  return messages
+    .map((message) => {
+      const role = message?.role || "user";
+      const content = message?.content;
+      let text = "";
+      if (typeof content === "string") {
+        text = content;
+      } else if (content && typeof content.text === "string") {
+        text = content.text;
+      } else if (content && content.type === "text" && typeof content.text === "string") {
+        text = content.text;
+      } else if (typeof message?.text === "string") {
+        text = message.text;
+      }
+      return text ? `${role}: ${text}` : null;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMessages) {
   const contextLines = Array.isArray(context)
     ? context
         .slice(-10)
         .map((entry) => `${entry.role || "user"}: ${entry.content}`)
         .join("\n")
     : "";
+  const preparedPrompt = formatPromptMessages(promptMessages);
   return [
-    "You are an assistant that selects exactly one MCP tool call for the trade blotter.",
-    "Respond ONLY with JSON and no extra text.",
+    "You are an assistant that selects exactly one MCP tool call for the trade blotter. Always follow MCP resources guidance from MCP Server.",
+    "Respond ONLY with JSON and no extra text, but interate multiple times if needed, explain the multiple iterations in the message.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
     "Rules:",
@@ -60,8 +93,14 @@ function buildGeminiPrompt(toolsPayload, userMessage, context) {
     "- If no tool applies, set tool to null and explain in message.",
     "- If a trade query requires a view_id and it is missing, ask for it in message.",
     "",
+    "Conversation summary:",
+    summary || "(none)",
+    "",
     "Conversation context:",
     contextLines || "(none)",
+    "",
+    "Prepared MCP prompt context:",
+    preparedPrompt || "(none)",
     "",
     "Available tools JSON:",
     JSON.stringify(toolsPayload),
@@ -94,13 +133,20 @@ function extractJsonFromText(text) {
   return null;
 }
 
-async function callGemini(prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+async function callGemini(prompt, { model = geminiModel, temperature = geminiTemperature, maxOutputTokens } = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+  const generationConfig = {
+    temperature: Number.isFinite(temperature) ? temperature : 1.0
+  };
+  if (Number.isFinite(maxOutputTokens)) {
+    generationConfig.maxOutputTokens = maxOutputTokens;
+  }
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig
     })
   });
   const payload = await response.json();
@@ -197,6 +243,7 @@ app.post("/api/llm/gemini", async (req, res) => {
       return;
     }
     const context = Array.isArray(req.body?.context) ? req.body.context : [];
+    const summary = typeof req.body?.summary === "string" ? req.body.summary : "";
 
     const toolsPayload = await proxyRequest("GET", "/tools");
     const toolsList = Array.isArray(toolsPayload)
@@ -206,8 +253,20 @@ app.post("/api/llm/gemini", async (req, res) => {
         : [];
     const toolNames = new Set(toolsList.map((tool) => tool.name));
 
-    const prompt = buildGeminiPrompt(toolsPayload, message, context);
-    const modelText = await callGemini(prompt);
+    let promptMessages = [];
+    try {
+      const promptPayload = await proxyRequest("POST", "/prompt/analyze_trade_query", {
+        arguments: { user_question: message }
+      });
+      promptMessages = Array.isArray(promptPayload?.messages) ? promptPayload.messages : [];
+    } catch (error) {
+      console.warn("Failed to load MCP prompt context:", error?.message || error);
+    }
+
+    const prompt = buildGeminiPrompt(toolsPayload, message, context, summary, promptMessages);
+    const modelText = await callGemini(prompt, {
+      maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192
+    });
     const modelJson = extractJsonFromText(modelText);
 
     if (!modelJson) {
@@ -225,16 +284,58 @@ app.post("/api/llm/gemini", async (req, res) => {
       return;
     }
 
+    const toolArgs = modelJson.arguments || {};
+
     const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
-      arguments: modelJson.arguments || {}
+      arguments: toolArgs
     });
 
     res.json({
       message: modelJson.message || "Tool executed.",
-      toolCall: { name: modelJson.tool, arguments: modelJson.arguments || {} },
+      toolCall: { name: modelJson.tool, arguments: toolArgs },
       toolResult,
       modelText
     });
+  } catch (error) {
+    res.status(502).json({ error: error.message });
+  }
+});
+
+app.post("/api/llm/summarize", async (req, res) => {
+  try {
+    if (!geminiApiKey) {
+      res.status(400).json({ error: "Gemini API key not configured. Set GEMINI_API_KEY." });
+      return;
+    }
+    const summary = typeof req.body?.summary === "string" ? req.body.summary : "";
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const historyLines = history
+      .map((entry) => `${entry.role || "user"}: ${entry.content}`)
+      .join("\n");
+
+    const prompt = [
+      "You summarize a long-running trading assistant session for tool selection.",
+      "Return a concise summary focusing on:",
+      "- user intent and constraints",
+      "- selected trade view IDs",
+      "- filters and parameters used",
+      "- important tool results (counts, key fields)",
+      "Keep it short and actionable.",
+      "",
+      "Existing summary:",
+      summary || "(none)",
+      "",
+      "New conversation lines:",
+      historyLines || "(none)"
+    ].join("\n");
+
+    const modelText = await callGemini(prompt, {
+      model: geminiContextModel,
+      temperature: Number.isFinite(geminiContextTemperature) ? geminiContextTemperature : 0.2,
+      maxOutputTokens: Number.isFinite(geminiContextMaxOutputTokens) ? geminiContextMaxOutputTokens : 512
+    });
+
+    res.json({ summary: modelText });
   } catch (error) {
     res.status(502).json({ error: error.message });
   }

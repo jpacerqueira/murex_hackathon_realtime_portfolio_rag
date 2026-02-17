@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trade Blotter MCP Desktop</title>
+    <title>Trade Blotter</title>
     <link rel="stylesheet" href="/css/app_theme.css" />
     <style>
       body {
@@ -18,7 +18,7 @@
         margin: 0 auto;
         padding: 2rem 1.5rem 3rem;
         display: grid;
-        grid-template-columns: 280px 1fr;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
       }
       header {
@@ -113,6 +113,34 @@
         background: rgba(73, 149, 255, 0.1);
         border-color: rgba(73, 149, 255, 0.35);
       }
+      .message.email-preview .bubble {
+        background: rgba(73, 149, 255, 0.04);
+        border-color: rgba(73, 149, 255, 0.18);
+        white-space: normal;
+      }
+      .message.email-preview .bubble pre {
+        white-space: pre-wrap;
+      }
+      .email-preview-caption {
+        margin: 0 0 0.75rem;
+        font-size: 0.85rem;
+        color: var(--dxc-muted);
+      }
+      #emailPreviewContent {
+        max-height: 320px;
+        overflow: auto;
+        color: #e8e8e8;
+        font-weight: 400;
+      }
+      #emailPreviewContent table,
+      #emailPreviewContent pre,
+      #emailPreviewContent h4,
+      #emailPreviewContent div,
+      #emailPreviewContent th,
+      #emailPreviewContent td {
+        color: #e8e8e8 !important;
+        font-weight: 400;
+      }
       .composer {
         display: flex;
         gap: 0.75rem;
@@ -177,41 +205,50 @@
         overflow: auto;
         margin: 0.75rem 0 0;
       }
+      .resources-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0.75rem 0 0;
+      }
+      .resources-list .resource-item {
+        background: var(--dxc-surface-2);
+        border: 1px solid var(--dxc-border);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .resources-list .resource-item:hover {
+        border-color: var(--dxc-accent);
+        color: var(--dxc-accent);
+      }
+      #resourceContentOutput {
+        max-height: 360px;
+      }
+      .iterate-hint {
+        border-left: 4px solid var(--dxc-accent);
+      }
+      .iterate-hint-text {
+        margin-top: 0;
+        color: var(--dxc-muted);
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body class="stApp">
     <div class="container">
       <header>
-        <h1>Trade Blotter MCP Desktop</h1>
-        <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
-      </header>
-
-      <aside class="panel">
-        <h2>MCP Control</h2>
-        <p>Use the tools, resources, and prompts available from the MCP server.</p>
+        <h1>Trade Blotter</h1>
         <div class="toolbar">
-          <button class="button-secondary" data-action="tools">List Tools</button>
-          <button class="button-secondary" data-action="resources">List Resources</button>
-          <button class="button-secondary" data-action="prompts">List Prompts</button>
+          <button class="button-secondary" id="toggleMcpPanel">Hide MCP Control</button>
+          <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
         </div>
-        <pre id="discoveryOutput">Click a button to load MCP metadata.</pre>
-
-        <div class="divider"></div>
-
-        <h2>Read Resource</h2>
-        <label for="resourceUri">Resource URI</label>
-        <input id="resourceUri" placeholder="resource://trade-blotter/api-docs" />
-        <button id="readResource">Read Resource</button>
-        <pre id="resourceOutput">Resource content appears here.</pre>
-      </aside>
+      </header>
 
       <main class="panel chat">
         <div>
-          <h2>Claude-style Chat</h2>
-          <p>
-            Ask in natural language. The app will translate common intents into MCP tool calls.
-            If your request is ambiguous, it will respond with guidance.
-          </p>
+          <h2>DXC Blotter Minds Chat</h2>
         </div>
 
         <div class="chat-window" id="chatWindow"></div>
@@ -225,36 +262,60 @@
         </div>
 
         <div class="toolbar">
-          <button class="button-secondary" id="emailResult">Email last answer</button>
+          <button class="button-secondary" id="approveResultsForEmail">Approve results for email</button>
+          <button class="button-secondary" id="summarizeChat">Summarize chat</button>
           <button class="button-secondary" id="clearChat">Clear chat</button>
+        </div>
+
+        <div id="emailPreviewInApp" class="message email-preview" style="display: none;">
+          <div class="role">Email</div>
+          <div class="bubble email-bubble">
+            <p class="email-preview-caption">Preview — open in Outlook or Gmail when ready.</p>
+            <div id="emailPreviewContent"></div>
+            <div class="toolbar" style="margin-top: 0.75rem;">
+              <button class="button-secondary" id="openInOutlookGmail">Open in Outlook / Gmail</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="iterateHint" class="panel iterate-hint" style="display: none;">
+          <p class="iterate-hint-text"></p>
+          <div class="toolbar">
+            <button class="button-secondary" id="useAsNextRequest">Reasoning with Assistance Answer</button>
+          </div>
         </div>
 
         <div class="divider"></div>
 
-        <section>
-          <h2>How to use this app</h2>
-          <p>
-            This desktop experience mirrors how Claude Desktop connects to local MCP servers.
-            Ensure the MCP server is running, then ask questions or call tools directly.
-          </p>
-          <p>
-            Documentation index: <span>Fetch the complete documentation index at:</span>
-            <a class="link" href="https://modelcontextprotocol.io/llms.txt" target="_blank" rel="noreferrer">
-              https://modelcontextprotocol.io/llms.txt
-            </a>
-          </p>
-          <p>
-            Learn more about connecting local servers:
-            <a
-              class="link"
-              href="https://modelcontextprotocol.io/docs/develop/connect-local-servers"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Connect to local MCP servers
-            </a>
-          </p>
+        <section class="panel" id="mcpPanel">
+          <h2>MCP Control</h2>
+          <p>Use the tools, resources, and prompts available from the MCP server.</p>
+          <div class="toolbar">
+            <button class="button-secondary" data-action="tools">List Tools</button>
+            <button class="button-secondary" data-action="resources">List Resources</button>
+            <button class="button-secondary" data-action="prompts">List Prompts</button>
+          </div>
+          <pre id="discoveryOutput">Click a button to load MCP metadata.</pre>
+
+          <div class="divider"></div>
+
+          <h2>MCP Resources (API Documentation &amp; Guidance)</h2>
+          <p>List resources from the MCP server, then read one to view the Trade Blotter API Documentation or other guidance.</p>
+          <div class="toolbar">
+            <button class="button-secondary" id="loadResourcesList">Load resources list</button>
+          </div>
+          <div id="resourcesListContainer" class="resources-list"></div>
+          <pre id="resourceContentOutput">Click a resource above to read it via the server (read_resource).</pre>
+
+          <div class="divider"></div>
+
+          <h2>Read Resource</h2>
+          <label for="resourceUri">Resource URI</label>
+          <input id="resourceUri" placeholder="resource://trade-blotter/api-docs" />
+          <button id="readResource">Read Resource</button>
+          <pre id="resourceOutput">Resource content appears here.</pre>
         </section>
+
       </main>
     </div>
 
