@@ -3,6 +3,8 @@ const resourceOutput = document.getElementById("resourceOutput");
 const chatWindow = document.getElementById("chatWindow");
 const chatInput = document.getElementById("chatInput");
 const healthStatus = document.getElementById("healthStatus");
+const toggleMcpPanelButton = document.getElementById("toggleMcpPanel");
+const mcpPanel = document.getElementById("mcpPanel");
 const emailResultButton = document.getElementById("emailResult");
 const summarizeChatButton = document.getElementById("summarizeChat");
 const clearChatButton = document.getElementById("clearChat");
@@ -416,6 +418,12 @@ async function handleUserMessage(message) {
 
 document.querySelectorAll("button[data-action]").forEach((button) => {
   button.addEventListener("click", () => loadDiscovery(button.dataset.action));
+});
+
+toggleMcpPanelButton.addEventListener("click", () => {
+  const isHidden = mcpPanel.style.display === "none";
+  mcpPanel.style.display = isHidden ? "" : "none";
+  toggleMcpPanelButton.textContent = isHidden ? "Hide MCP Control" : "Unhide MCP Control";
 });
 
 document.getElementById("readResource").addEventListener("click", async () => {

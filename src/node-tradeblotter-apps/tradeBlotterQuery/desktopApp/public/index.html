@@ -183,10 +183,13 @@
     <div class="container">
       <header>
         <h1>Trade Blotter MCP Desktop</h1>
-        <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
+        <div class="toolbar">
+          <button class="button-secondary" id="toggleMcpPanel">Hide MCP Control</button>
+          <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
+        </div>
       </header>
 
-      <aside class="panel">
+      <aside class="panel" id="mcpPanel">
         <h2>MCP Control</h2>
         <p>Use the tools, resources, and prompts available from the MCP server.</p>
         <div class="toolbar">
