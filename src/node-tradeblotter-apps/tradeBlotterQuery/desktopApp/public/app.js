@@ -4,10 +4,13 @@ const chatWindow = document.getElementById("chatWindow");
 const chatInput = document.getElementById("chatInput");
 const healthStatus = document.getElementById("healthStatus");
 const emailResultButton = document.getElementById("emailResult");
+const summarizeChatButton = document.getElementById("summarizeChat");
 const clearChatButton = document.getElementById("clearChat");
 
 let lastAssistantMessage = "";
 const chatHistory = [];
+let chatSummary = "";
+let isSummarizing = false;
 
 function formatJson(data) {
   if (typeof data === "string") {
@@ -64,6 +67,61 @@ function updateLastAssistantMessage(content) {
     }
   }
   chatHistory.push({ role: "assistant", content });
+}
+
+async function maybeSummarizeHistory() {
+  if (isSummarizing || chatHistory.length <= 12) {
+    return;
+  }
+  isSummarizing = true;
+  try {
+    const toSummarize = chatHistory
+      .filter((entry) => entry.content && entry.content !== "Working on that...")
+      .slice(0, Math.max(0, chatHistory.length - 6));
+    if (!toSummarize.length) {
+      return;
+    }
+    const response = await request("/api/llm/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: chatSummary, history: toSummarize })
+    });
+    if (response?.summary) {
+      chatSummary = response.summary;
+      chatHistory.splice(0, toSummarize.length);
+    }
+  } catch {
+    // Keep current summary on failure.
+  } finally {
+    isSummarizing = false;
+  }
+}
+
+async function summarizeOnDemand() {
+  if (isSummarizing || !chatHistory.length) {
+    return;
+  }
+  isSummarizing = true;
+  summarizeChatButton.disabled = true;
+  try {
+    const history = chatHistory.filter((entry) => entry.content && entry.content !== "Working on that...");
+    const response = await request("/api/llm/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: chatSummary, history })
+    });
+    if (response?.summary) {
+      chatSummary = response.summary;
+      appendMessage("assistant", `Summary:\n${chatSummary}`);
+      updateLastAssistantMessage(`Summary:\n${chatSummary}`);
+    }
+  } catch (error) {
+    appendMessage("assistant", `Summary error: ${error.message}`);
+    updateLastAssistantMessage(`Summary error: ${error.message}`);
+  } finally {
+    summarizeChatButton.disabled = false;
+    isSummarizing = false;
+  }
 }
 function coercePythonDictToJson(text) {
   if (!text || typeof text !== "string") {
@@ -156,6 +214,7 @@ async function loadDiscovery(action) {
 }
 
 async function handleGeminiMessage(message) {
+  await maybeSummarizeHistory();
   const context = chatHistory
     .filter((entry) => entry.content && entry.content !== "Working on that...")
     .slice(-10)
@@ -163,7 +222,7 @@ async function handleGeminiMessage(message) {
   const result = await request("/api/llm/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, context })
+    body: JSON.stringify({ message, context, summary: chatSummary })
   });
 
   if (result.toolCall) {
@@ -340,10 +399,15 @@ emailResultButton.addEventListener("click", () => {
   }
 });
 
+summarizeChatButton.addEventListener("click", () => {
+  summarizeOnDemand();
+});
+
 clearChatButton.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   lastAssistantMessage = "";
   chatHistory.length = 0;
+  chatSummary = "";
 });
 
 appendMessage("assistant", "Hello! Ask about trade views, schemas, or query trades. Example: list trade views.");
