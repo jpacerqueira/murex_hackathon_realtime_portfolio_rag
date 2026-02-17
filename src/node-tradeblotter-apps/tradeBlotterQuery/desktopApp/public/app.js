@@ -233,6 +233,78 @@ function buildTradeTableHtml(data, maxRows = 19) {
   `;
 }
 
+function buildGenericTableHtml(value, maxRows = 20) {
+  if (!value) {
+    return "";
+  }
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      return "";
+    }
+    if (typeof value[0] === "object" && value[0] !== null) {
+      const headers = Array.from(
+        value.reduce((set, row) => {
+          Object.keys(row || {}).forEach((key) => set.add(key));
+          return set;
+        }, new Set())
+      );
+      const headerHtml = headers
+        .map((header) => `<th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">${escapeHtml(header)}</th>`)
+        .join("");
+      const bodyHtml = value.slice(0, maxRows).map((row) => {
+        const cellsHtml = headers
+          .map((header) => `<td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(row?.[header] ?? "")}</td>`)
+          .join("");
+        return `<tr>${cellsHtml}</tr>`;
+      }).join("");
+      return `
+        <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;">
+          <thead><tr>${headerHtml}</tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      `;
+    }
+    const rows = value.slice(0, maxRows).map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(item)}</td></tr>`).join("");
+    return `
+      <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;">
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  if (typeof value === "object") {
+    if (Array.isArray(value.data)) {
+      return buildTradeTableHtml(value);
+    }
+    const rows = Object.entries(value).map(([key, val]) => (
+      `<tr><td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(key)}</td>` +
+      `<td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(val)}</td></tr>`
+    )).join("");
+    return `
+      <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;">
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+  return "";
+}
+
+function buildHtmlFromJsonText(text) {
+  const parsed = coercePythonDictToJson(text);
+  if (!parsed) {
+    return "";
+  }
+  const tableHtml = buildGenericTableHtml(parsed);
+  if (!tableHtml) {
+    return "";
+  }
+  return `
+    <div style="font-family:Arial,sans-serif;font-size:14px;color:#111;">
+      ${tableHtml}
+    </div>
+  `;
+}
+
 function formatGeminiToolResult(result) {
   const toolText = extractToolText(result.toolResult);
   const parsed = coercePythonDictToJson(toolText);
@@ -305,11 +377,13 @@ async function handleGeminiMessage(message) {
   if (result.toolCall) {
     const toolText = extractToolText(result.toolResult);
     if (toolText) {
-      lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(toolText)}</pre>`;
+      lastAssistantHtml = buildHtmlFromJsonText(toolText)
+        || `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(toolText)}</pre>`;
       return toolText;
     }
     if (result.message) {
-      lastAssistantHtml = `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
+      lastAssistantHtml = buildHtmlFromJsonText(result.message)
+        || `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
       return result.message;
     }
     lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(formatJson(result.toolResult))}</pre>`;
@@ -317,7 +391,8 @@ async function handleGeminiMessage(message) {
   }
 
   if (result.message) {
-    lastAssistantHtml = `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
+    lastAssistantHtml = buildHtmlFromJsonText(result.message)
+      || `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
     return result.message;
   }
 
