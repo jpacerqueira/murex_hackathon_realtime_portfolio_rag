@@ -60,7 +60,7 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary) {
         .join("\n")
     : "";
   return [
-    "You are an assistant that selects exactly one MCP tool call for the trade blotter.",
+    "You are an assistant that selects exactly one MCP tool call for the trade blotter. Always follow MCP resources guidance from MCP Server.",
     "Respond ONLY with JSON and no extra text.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
