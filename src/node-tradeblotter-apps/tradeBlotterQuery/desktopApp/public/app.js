@@ -168,6 +168,18 @@ function extractToolText(toolResult) {
   return firstText?.text || null;
 }
 
+function extractMcpText(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const content = payload.content;
+  if (!Array.isArray(content) || !content.length) {
+    return null;
+  }
+  const firstText = content.find((item) => item?.type === "text" && item?.text);
+  return firstText?.text || null;
+}
+
 function formatTradeRows(data, maxRows = 10) {
   if (!data || !Array.isArray(data.data)) {
     return null;
@@ -289,20 +301,17 @@ async function handleGeminiMessage(message) {
   });
 
   if (result.toolCall) {
-    const cleaned = formatGeminiToolResult(result);
-    if (cleaned) {
-      lastAssistantHtml = cleaned.html || "";
-      return cleaned.text;
+    const toolText = extractToolText(result.toolResult);
+    if (toolText) {
+      lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(toolText)}</pre>`;
+      return toolText;
     }
-    const fallbackSections = [];
     if (result.message) {
-      fallbackSections.push(result.message);
+      lastAssistantHtml = `<p style="font-family:Arial,sans-serif;font-size:14px;">${escapeHtml(result.message)}</p>`;
+      return result.message;
     }
-    fallbackSections.push(`Tool: ${result.toolCall.name}`);
-    fallbackSections.push(`Arguments:\n${formatJson(result.toolCall.arguments)}`);
-    fallbackSections.push(`Result:\n${formatJson(result.toolResult)}`);
-    lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(fallbackSections.join("\n\n"))}</pre>`;
-    return fallbackSections.join("\n\n");
+    lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(formatJson(result.toolResult))}</pre>`;
+    return formatJson(result.toolResult);
   }
 
   if (result.message) {
@@ -371,7 +380,7 @@ async function handleMcpHeuristics(message) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_question: message })
     });
-    return formatJson(result);
+    return extractMcpText(result) || formatJson(result);
   }
 
   if (lower.includes("trade") || lower.includes("trades") || lower.includes("query")) {
@@ -396,7 +405,8 @@ async function handleMcpHeuristics(message) {
     body: JSON.stringify({ user_question: message })
   });
 
-  return `I can call MCP tools for you. Here is the MCP prompt guidance:\n\n${formatJson(fallback)}`;
+  const fallbackText = extractMcpText(fallback) || formatJson(fallback);
+  return `I can call MCP tools for you. Here is the MCP prompt guidance:\n\n${fallbackText}`;
 }
 
 async function handleUserMessage(message) {
