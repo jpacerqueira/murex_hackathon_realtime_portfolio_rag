@@ -387,7 +387,7 @@ function buildApprovedResultsText(parsed) {
     lines.push(`${key}: ${display}`);
   });
   const data = parsed.data;
-  const SPACE2S = "  ";
+  const SPACE9S = "         ";
   if (Array.isArray(data) && data.length > 0) {
     lines.push("", "Data:");
     const headers = Array.from(
@@ -396,9 +396,9 @@ function buildApprovedResultsText(parsed) {
         return set;
       }, new Set())
     );
-    lines.push(headers.join(SPACE2S));
+    lines.push(headers.join(SPACE9S));
     data.slice(0, 100).forEach((row) => {
-      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE2S));
+      lines.push(headers.map((h) => (row?.[h] != null ? String(row[h]) : "")).join(SPACE9S));
     });
     if (data.length > 100) lines.push(`... ${data.length - 100} more rows`);
   }
