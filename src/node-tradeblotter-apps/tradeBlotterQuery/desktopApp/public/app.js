@@ -180,7 +180,7 @@ function extractMcpText(payload) {
   return firstText?.text || null;
 }
 
-function formatTradeRows(data, maxRows = 10) {
+function formatTradeRows(data, maxRows = 100) {
   if (!data || !Array.isArray(data.data)) {
     return null;
   }
@@ -199,7 +199,7 @@ function formatTradeRows(data, maxRows = 10) {
   return lines.join("\n");
 }
 
-function buildTradeTableHtml(data, maxRows = 20) {
+function buildTradeTableHtml(data, maxRows = 100) {
   if (!data || !Array.isArray(data.data)) {
     return "";
   }
