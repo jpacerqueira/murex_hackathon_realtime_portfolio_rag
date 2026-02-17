@@ -338,7 +338,7 @@ function buildHtmlFromJsonText(text) {
 
 const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
 const SPACE2S = "  "; // 2 spaces for data columns (in-app)
-const EMAIL_DATA_SEP = "\t"; // tab between data columns in Outlook/Gmail email body
+const EMAIL_DATA_SEP = "\t|\t"; // tab between data columns in Outlook/Gmail email body
 
 /** Build cleaned HTML for "Approve results for email": variables table + data table + data as email (9 spaces). */
 function buildApprovedResultsHtml(parsed) {

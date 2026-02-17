@@ -51,16 +51,41 @@ async function proxyRequest(method, urlPath, body) {
   return payload;
 }
 
-function buildGeminiPrompt(toolsPayload, userMessage, context, summary) {
+function formatPromptMessages(messages) {
+  if (!Array.isArray(messages)) {
+    return "";
+  }
+  return messages
+    .map((message) => {
+      const role = message?.role || "user";
+      const content = message?.content;
+      let text = "";
+      if (typeof content === "string") {
+        text = content;
+      } else if (content && typeof content.text === "string") {
+        text = content.text;
+      } else if (content && content.type === "text" && typeof content.text === "string") {
+        text = content.text;
+      } else if (typeof message?.text === "string") {
+        text = message.text;
+      }
+      return text ? `${role}: ${text}` : null;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMessages) {
   const contextLines = Array.isArray(context)
     ? context
         .slice(-10)
         .map((entry) => `${entry.role || "user"}: ${entry.content}`)
         .join("\n")
     : "";
+  const preparedPrompt = formatPromptMessages(promptMessages);
   return [
     "You are an assistant that selects exactly one MCP tool call for the trade blotter. Always follow MCP resources guidance from MCP Server.",
-    "Respond ONLY with JSON and no extra text.",
+    "Respond ONLY with JSON and no extra text, but interate multiple times if needed, explain the multiple iterations in the message.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
     "Rules:",
@@ -73,6 +98,9 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary) {
     "",
     "Conversation context:",
     contextLines || "(none)",
+    "",
+    "Prepared MCP prompt context:",
+    preparedPrompt || "(none)",
     "",
     "Available tools JSON:",
     JSON.stringify(toolsPayload),
@@ -225,7 +253,17 @@ app.post("/api/llm/gemini", async (req, res) => {
         : [];
     const toolNames = new Set(toolsList.map((tool) => tool.name));
 
-    const prompt = buildGeminiPrompt(toolsPayload, message, context, summary);
+    let promptMessages = [];
+    try {
+      const promptPayload = await proxyRequest("POST", "/prompt/analyze_trade_query", {
+        arguments: { user_question: message }
+      });
+      promptMessages = Array.isArray(promptPayload?.messages) ? promptPayload.messages : [];
+    } catch (error) {
+      console.warn("Failed to load MCP prompt context:", error?.message || error);
+    }
+
+    const prompt = buildGeminiPrompt(toolsPayload, message, context, summary, promptMessages);
     const modelText = await callGemini(prompt, {
       maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192
     });
