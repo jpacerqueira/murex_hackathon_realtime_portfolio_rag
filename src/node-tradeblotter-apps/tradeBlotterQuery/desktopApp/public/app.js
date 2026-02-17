@@ -45,7 +45,7 @@ const iterateHintTextEl = document.querySelector("#iterateHint .iterate-hint-tex
 function showIterateHint() {
   if (!iterateHintEl || !iterateHintTextEl) return;
   iterateHintTextEl.textContent =
-    "This reply isn’t structured (JSON) data. You can submit it as your next message to progress and iterate with multiple levels of reasoning, with you validating each step (man-in-the-middle).";
+    "Multiple levels of reasoning, with you validating each step (man-in-the-middle).";
   iterateHintEl.style.display = "";
 }
 
