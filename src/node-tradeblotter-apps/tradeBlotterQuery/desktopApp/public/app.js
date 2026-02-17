@@ -180,7 +180,7 @@ function extractMcpText(payload) {
   return firstText?.text || null;
 }
 
-function formatTradeRows(data, maxRows = 100) {
+function formatTradeRows(data, maxRows = 19) {
   if (!data || !Array.isArray(data.data)) {
     return null;
   }
@@ -199,7 +199,7 @@ function formatTradeRows(data, maxRows = 100) {
   return lines.join("\n");
 }
 
-function buildTradeTableHtml(data, maxRows = 100) {
+function buildTradeTableHtml(data, maxRows = 19) {
   if (!data || !Array.isArray(data.data)) {
     return "";
   }
@@ -344,7 +344,7 @@ function extractFilters(text) {
 
 async function handleMcpHeuristics(message) {
   const lower = message.toLowerCase();
-  const viewId = extractViewId(message);
+  const viewId = extractViewId(message) || "8ff46242-dffa-447e-b221-8c328d785906";
   const filters = extractFilters(message);
 
   if (lower.includes("health")) {
@@ -384,9 +384,6 @@ async function handleMcpHeuristics(message) {
   }
 
   if (lower.includes("trade") || lower.includes("trades") || lower.includes("query")) {
-    if (!viewId) {
-      return "Please include a view id (UUID) in your request or ask me to list trade views first.";
-    }
     const result = await request(`/api/tool/query_trades`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
