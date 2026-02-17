@@ -337,7 +337,7 @@ function buildHtmlFromJsonText(text) {
   `;
 }
 
-const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id", "data"];
+const APPROVED_EMAIL_EXCLUDE_KEYS = ["id", "view_id"]; //, "data"];
 
 /** Build cleaned HTML for "Approve results for email": variables table + data table (no id/view_id). */
 function buildApprovedResultsHtml(parsed) {
