@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trade Blotter</title>
+    <title>Trade Blotter — by DXC</title>
     <link rel="stylesheet" href="/css/app_theme.css" />
     <style>
       body {
@@ -31,6 +31,14 @@
       h1 {
         margin: 0;
         font-size: 1.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      h1 .app-title-icon {
+        height: 1.75rem;
+        width: auto;
+        vertical-align: middle;
       }
       .status-pill {
         padding: 0.4rem 0.8rem;
@@ -239,7 +247,7 @@
   <body class="stApp">
     <div class="container">
       <header>
-        <h1>Trade Blotter</h1>
+        <h1>Trade Blotter — by <img src="/css/DXC_icon.png" alt="DXC" class="app-title-icon" /></h1>
         <div class="toolbar">
           <button class="button-secondary" id="toggleMcpPanel">Hide MCP Control</button>
           <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
