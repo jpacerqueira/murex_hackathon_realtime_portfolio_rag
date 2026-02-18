@@ -13,7 +13,8 @@ services:
       context: ./mcp
     container_name: mcp-server
     environment:
-      - TRADE_API_BASE_URL=https://mx101373vm.hackathon.murex.com:25209
+      - TRADE_API_BASE_URL=http://trade-api:8000
+      # - TRADE_API_BASE_URL=https://mx101373vm.hackathon.murex.com:25209
       # TRADE_API_BASE_URL is the base URL for the trade API local is http://trade-api:8000
       # Murex credentials are used to authenticate with the Murex API
       - MX_USERNAME=MUREXFO

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Suppress SSL warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-API_BASE_URL = os.getenv("TRADE_API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("TRADE_API_BASE_URL", "http://trade-api:8000")
 token_manager: Optional[TokenManager] = None
 
 app = Server("trade-blotter-mcp")
@@ -31,7 +31,7 @@ def _is_mock_api() -> bool:
     """Check if using mock API based on configuration."""
     if os.getenv("USE_MOCK_API", "").lower() == "true":
         return True
-    if "localhost" in API_BASE_URL.lower() or "127.0.0.1" in API_BASE_URL:
+    if "localhost" in API_BASE_URL.lower() or "127.0.0.1" in API_BASE_URL or "http://trade-api:8000" in API_BASE_URL:
         return True
     return False
 
