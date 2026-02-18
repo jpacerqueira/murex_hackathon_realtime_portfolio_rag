@@ -1,0 +1,51 @@
+services:
+  trade-api:
+    build:
+      context: ./tradeQueryApi
+    container_name: trade-api
+    ports:
+      - "8000:8000"
+    networks:
+      - mcp-hackathon
+
+  mcp-server:
+    build:
+      context: ./mcp
+    container_name: mcp-server
+    environment:
+      - TRADE_API_BASE_URL=http://trade-api:8000
+      # - TRADE_API_BASE_URL=https://mxXXXXXXXXXvm.hackathon.MMMMMM.com:99999
+      # TRADE_API_BASE_URL is the base URL for the trade API local is http://trade-api:8000
+      # Murex credentials are used to authenticate with the Murex API
+      - MX_USERNAME=XXXXXXXXX
+      - MX_PASSWORD=XXXXXXXXX
+      - MX_GROUP=XXXXXXXXX # Trading group
+      - MX_FO_DESK=XXXXXXXXX # Front office desk
+    ports:
+      - "7001:7001"
+    depends_on:
+      - trade-api
+    networks:
+      - mcp-hackathon
+
+  desktop-app:
+    build:
+      context: ./desktopApp
+    container_name: desktop-app
+    environment:
+      - MCP_HTTP_BASE_URL=http://mcp-server:7001
+      - PORT=5173
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_INFERENCE_MODEL=${GEMINI_INFERENCE_MODEL:-gemini-3-flash-preview}
+      - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - mcp-server
+    networks:
+      - mcp-hackathon
+
+networks:
+  mcp-hackathon:
+    name: mcp-hackathon
