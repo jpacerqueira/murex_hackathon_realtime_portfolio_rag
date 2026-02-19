@@ -33,7 +33,8 @@ From the repo root:
 ```
 export GEMINI_API_KEY=your_api_key
 export GOOGLE_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-3-flash-preview
+export GEMINI_INFERENCE_MODEL=gemini-2.5-pro
+export GEMINI_CONTEXT_MODEL=gemini-2.5-pro
 export GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
 export GEMINI_TEMPERATURE=1.0
 docker compose up --build
@@ -84,7 +85,8 @@ Set your API key (and optionally a model):
 
 ```
 export GEMINI_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-3-flash-preview
+export GEMINI_INFERENCE_MODEL=gemini-2.5-pro
+export GEMINI_CONTEXT_MODEL=gemini-2.5-pro
 export GEMINI_TEMPERATURE=1.0
 ```
 
