@@ -84,7 +84,7 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     : "";
   const preparedPrompt = formatPromptMessages(promptMessages);
   return [
-    "You are an assistant that selects exactly one MCP tool call for the trade blotter. Always follow MCP resources guidance from MCP Server.",
+    "You are an assistant that selects as many as required MCP tool calls for the trade blotter. Always follow MCP resources guidance from MCP Server.",
     "Respond ONLY with JSON and no extra text, but interate multiple times if needed, explain the multiple iterations in the message.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
