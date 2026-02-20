@@ -9,10 +9,10 @@ const app = express();
 const port = Number(process.env.PORT || 5173);
 const mcpBaseUrl = process.env.MCP_HTTP_BASE_URL || "http://mcp-server:7001";
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3-pro-preview";
+const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3.1-pro-preview";
 const geminiTemperature = Number.parseFloat(process.env.GEMINI_TEMPERATURE ?? "1.0");
 const geminiMaxOutputTokens = Number.parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? "8192", 10);
-const geminiContextModel = process.env.GEMINI_CONTEXT_MODEL || "gemini-3-pro-preview";
+const geminiContextModel = process.env.GEMINI_CONTEXT_MODEL || "gemini-3.1-pro-preview";
 const geminiContextTemperature = Number.parseFloat(process.env.GEMINI_CONTEXT_TEMPERATURE ?? "1.0");
 const geminiContextMaxOutputTokens = Number.parseInt(
   process.env.GEMINI_CONTEXT_MAX_OUTPUT_TOKENS ?? "512",
@@ -84,7 +84,7 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     : "";
   const preparedPrompt = formatPromptMessages(promptMessages);
   return [
-    "You are an assistant that selects exactly one MCP tool call for the trade blotter. Always follow MCP resources guidance from MCP Server.",
+    "You are an assistant that selects as many as required MCP tool calls for the trade blotter. Always follow MCP resources guidance from MCP Server.",
     "Respond ONLY with JSON and no extra text, but interate multiple times if needed, explain the multiple iterations in the message.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
@@ -92,6 +92,7 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     "- Use only tools listed in the tools JSON.",
     "- If no tool applies, set tool to null and explain in message.",
     "- If a trade query requires a view_id and it is missing, ask for it in message.",
+    "- Analyse internaly in your reasoning all trade views, list them and ask the user to select the best one.",
     "",
     "Conversation summary:",
     summary || "(none)",
