@@ -86,15 +86,17 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     : "";
   const preparedPrompt = formatPromptMessages(promptMessages);
   return [
-    "You are an assistant that selects as many as required MCP tool calls for the trade blotter. Always follow MCP resources guidance from MCP Server.",
-    "Respond ONLY with JSON and no extra text. You may be called again after each tool result to perform the next step; iterate as needed and explain in the message.",
-    "Schema:",
-    '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
-    "Rules:",
-    "- Use only tools listed in the tools JSON.",
-    "- If no tool applies, set tool to null and explain in message.",
-    "- If a trade query requires a view_id and it is missing, ask for it in message.",
-    "- Analyse internaly in your reasoning all trade views, list them and ask the user to select the best one.",
+    "You are an assistant for the trade blotter. You may respond in one of two ways:",
+    "",
+    "1) TO CALL A TOOL (or signal no tool): Respond with ONLY valid JSON, no other text:",
+    '   { "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user-facing message" }',
+    "   Use only tools from the tools JSON. If no tool applies, set tool to null and put your reply in message.",
+    "",
+    "2) DIRECT ANSWER (no tool): Respond with plain text only (no JSON). Use this when answering from context, explaining, or when a tool is not needed. Do not wrap in code blocks.",
+    "",
+    "Choose JSON when the user needs data from trade views (list views, query trades, schema, etc.). Choose plain text for greetings, explanations, or when you can answer without calling a tool.",
+    "If a trade query requires a view_id and it is missing, ask for it (in message if JSON, or in your text if direct).",
+    "Analyse internally all trade views when relevant; list them and ask the user to select if needed.",
     "",
     "Conversation summary:",
     summary || "(none)",
@@ -129,7 +131,7 @@ function buildFollowUpPrompt(previousSteps) {
     "",
     "--- Previous tool step(s) (you will be called again for the next step) ---",
     ...lines,
-    "--- If another tool call is needed, respond with JSON { \"tool\": \"...\", \"arguments\": {...}, \"message\": \"...\" }. Otherwise set \"tool\" to null and put the final user-facing message in \"message\". ---"
+    "--- If another tool call is needed, respond with JSON only: { \"tool\": \"...\", \"arguments\": {...}, \"message\": \"...\" }. If done with tools, set \"tool\" to null and put the final message in \"message\". Do not respond with plain text in this follow-up; use JSON. ---"
   ].join("\n");
 }
 
@@ -307,9 +309,15 @@ app.post("/api/llm/gemini", async (req, res) => {
       });
       lastModelText = modelText;
       const modelJson = extractJsonFromText(modelText);
+      const isToolJson = modelJson && typeof modelJson === "object" && "tool" in modelJson;
 
-      if (!modelJson) {
-        res.status(502).json({ error: "Gemini returned invalid JSON.", modelText: lastModelText, steps });
+      if (!isToolJson) {
+        const directAnswer = typeof modelText === "string" ? modelText.trim() : String(modelText);
+        res.json({
+          message: directAnswer,
+          directAnswer: true,
+          modelText: lastModelText
+        });
         return;
       }
 
