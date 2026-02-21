@@ -87,8 +87,8 @@ Set your API key (and optionally a model):
 
 ```
 export GEMINI_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-2.5-pro
-export GEMINI_CONTEXT_MODEL=gemini-2.5-pro
+export GEMINI_INFERENCE_MODEL=gemini-3.1-pro-preview
+export GEMINI_CONTEXT_MODEL=gemini-3.1-pro-preview
 export GEMINI_TEMPERATURE=1.0
 ```
 
