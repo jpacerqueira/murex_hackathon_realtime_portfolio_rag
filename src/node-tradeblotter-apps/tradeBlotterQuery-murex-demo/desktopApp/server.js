@@ -18,6 +18,8 @@ const geminiContextMaxOutputTokens = Number.parseInt(
   process.env.GEMINI_CONTEXT_MAX_OUTPUT_TOKENS ?? "512",
   10
 );
+const geminiThinkingLevel = process.env.GEMINI_THINKING_LEVEL || "high";
+const geminiMaxToolSteps = Number.parseInt(process.env.GEMINI_MAX_TOOL_STEPS ?? "5", 10);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -85,7 +87,7 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
   const preparedPrompt = formatPromptMessages(promptMessages);
   return [
     "You are an assistant that selects as many as required MCP tool calls for the trade blotter. Always follow MCP resources guidance from MCP Server.",
-    "Respond ONLY with JSON and no extra text, but interate multiple times if needed, explain the multiple iterations in the message.",
+    "Respond ONLY with JSON and no extra text. You may be called again after each tool result to perform the next step; iterate as needed and explain in the message.",
     "Schema:",
     '{ "tool": "tool_name_or_null", "arguments": { ... }, "message": "short user response" }',
     "Rules:",
@@ -107,6 +109,27 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     JSON.stringify(toolsPayload),
     "",
     `User message: ${userMessage}`
+  ].join("\n");
+}
+
+function buildFollowUpPrompt(previousSteps) {
+  if (!Array.isArray(previousSteps) || previousSteps.length === 0) {
+    return "";
+  }
+  const lines = previousSteps.map((step, i) => {
+    const resultPreview =
+      typeof step.result === "string"
+        ? step.result
+        : JSON.stringify(step.result);
+    const truncated =
+      resultPreview.length > 2000 ? resultPreview.slice(0, 2000) + "…" : resultPreview;
+    return `Step ${i + 1}: Tool "${step.name}" with arguments ${JSON.stringify(step.arguments)} returned: ${truncated}`;
+  });
+  return [
+    "",
+    "--- Previous tool step(s) (you will be called again for the next step) ---",
+    ...lines,
+    "--- If another tool call is needed, respond with JSON { \"tool\": \"...\", \"arguments\": {...}, \"message\": \"...\" }. Otherwise set \"tool\" to null and put the final user-facing message in \"message\". ---"
   ].join("\n");
 }
 
@@ -134,13 +157,17 @@ function extractJsonFromText(text) {
   return null;
 }
 
-async function callGemini(prompt, { model = geminiModel, temperature = geminiTemperature, maxOutputTokens } = {}) {
+async function callGemini(prompt, { model = geminiModel, temperature = geminiTemperature, maxOutputTokens, thinkingLevel } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
   const generationConfig = {
     temperature: Number.isFinite(temperature) ? temperature : 1.0
   };
   if (Number.isFinite(maxOutputTokens)) {
     generationConfig.maxOutputTokens = maxOutputTokens;
+  }
+  const level = thinkingLevel ?? geminiThinkingLevel;
+  if (level) {
+    generationConfig.thinkingConfig = { thinkingLevel: level };
   }
   const response = await fetch(url, {
     method: "POST",
@@ -264,38 +291,64 @@ app.post("/api/llm/gemini", async (req, res) => {
       console.warn("Failed to load MCP prompt context:", error?.message || error);
     }
 
-    const prompt = buildGeminiPrompt(toolsPayload, message, context, summary, promptMessages);
-    const modelText = await callGemini(prompt, {
-      maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192
-    });
-    const modelJson = extractJsonFromText(modelText);
+    const maxSteps = Number.isFinite(geminiMaxToolSteps) && geminiMaxToolSteps > 0 ? geminiMaxToolSteps : 5;
+    const steps = [];
+    let lastMessage = "";
+    let lastModelText = "";
 
-    if (!modelJson) {
-      res.status(502).json({ error: "Gemini returned invalid JSON.", modelText });
-      return;
+    for (let stepIndex = 0; stepIndex < maxSteps; stepIndex++) {
+      const basePrompt = buildGeminiPrompt(toolsPayload, message, context, summary, promptMessages);
+      const followUp = buildFollowUpPrompt(steps);
+      const prompt = basePrompt + followUp;
+
+      const modelText = await callGemini(prompt, {
+        maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192,
+        thinkingLevel: "high"
+      });
+      lastModelText = modelText;
+      const modelJson = extractJsonFromText(modelText);
+
+      if (!modelJson) {
+        res.status(502).json({ error: "Gemini returned invalid JSON.", modelText: lastModelText, steps });
+        return;
+      }
+
+      lastMessage = modelJson.message || "";
+
+      if (!modelJson.tool) {
+        const lastStep = steps[steps.length - 1];
+        res.json({
+          message: lastMessage || "No further tool selected.",
+          toolCalls: steps.length ? steps : undefined,
+          toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
+          toolResult: lastStep?.result,
+          modelText: lastModelText,
+          multiStep: steps.length > 1
+        });
+        return;
+      }
+
+      if (!toolNames.has(modelJson.tool)) {
+        res.status(400).json({ error: `Unknown tool selected: ${modelJson.tool}` });
+        return;
+      }
+
+      const toolArgs = modelJson.arguments || {};
+      const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
+        arguments: toolArgs
+      });
+
+      steps.push({ name: modelJson.tool, arguments: toolArgs, result: toolResult });
     }
 
-    if (!modelJson.tool) {
-      res.json({ message: modelJson.message || "No tool selected.", modelText });
-      return;
-    }
-
-    if (!toolNames.has(modelJson.tool)) {
-      res.status(400).json({ error: `Unknown tool selected: ${modelJson.tool}` });
-      return;
-    }
-
-    const toolArgs = modelJson.arguments || {};
-
-    const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
-      arguments: toolArgs
-    });
-
+    const lastStep = steps[steps.length - 1];
     res.json({
-      message: modelJson.message || "Tool executed.",
-      toolCall: { name: modelJson.tool, arguments: toolArgs },
-      toolResult,
-      modelText
+      message: lastMessage || "Max steps reached.",
+      toolCalls: steps,
+      toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
+      toolResult: lastStep?.result,
+      modelText: lastModelText,
+      multiStep: true
     });
   } catch (error) {
     res.status(502).json({ error: error.message });
@@ -333,7 +386,8 @@ app.post("/api/llm/summarize", async (req, res) => {
     const modelText = await callGemini(prompt, {
       model: geminiContextModel,
       temperature: Number.isFinite(geminiContextTemperature) ? geminiContextTemperature : 0.2,
-      maxOutputTokens: Number.isFinite(geminiContextMaxOutputTokens) ? geminiContextMaxOutputTokens : 512
+      maxOutputTokens: Number.isFinite(geminiContextMaxOutputTokens) ? geminiContextMaxOutputTokens : 512,
+      thinkingLevel: "low"
     });
 
     res.json({ summary: modelText });
