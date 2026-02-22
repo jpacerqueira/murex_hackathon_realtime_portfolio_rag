@@ -32,6 +32,10 @@ MANIFEST
 *.manifest
 *.spec
 
+# node modules
+node_modules/
+**/node_modules/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -224,3 +228,5 @@ src/api_realtime-portfolio_rag/shared/*.*
 
 ## done!
 
+
+src/node-tradeblotter-apps/tradeBlotterQuery-murex-demo/desktopApp/package-lock.json
