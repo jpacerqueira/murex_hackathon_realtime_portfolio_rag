@@ -2,11 +2,14 @@
 
 # Trade Blotter using MCP
 
-
 ![Trade Blotter MCP - Real-Time Portfolio](images/image1.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image2.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image3.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image4.png)
+
+# Video Demo using MCP
+
+![Video Demo - MCP Trade Blotter](https://www.youtube.com/watch?v=XEYDrn6GgMw)
 
 
 This repo runs three containers on a shared Docker network (`mcp-hackathon`):
@@ -35,8 +38,8 @@ From the repo root:
 ```
 export GEMINI_API_KEY=your_api_key
 export GOOGLE_API_KEY=your_api_key
-export GEMINI_INFERENCE_MODEL=gemini-2.5-pro
-export GEMINI_CONTEXT_MODEL=gemini-2.5-pro
+export GEMINI_INFERENCE_MODEL=gemini-3.1-pro
+export GEMINI_CONTEXT_MODEL=gemini-3.1-pro
 export GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
 export GEMINI_TEMPERATURE=1.0
 docker compose up --build
