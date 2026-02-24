@@ -9,8 +9,9 @@
 
 # Video Demo using MCP
 
-![Video Demo - MCP Trade Blotter](https://www.youtube.com/watch?v=XEYDrn6GgMw)
+- Our Demo in Video - [Video Demo - MCP Trade Blotter](https://www.youtube.com/watch?v=XEYDrn6GgMw)
 
+# Trade Blotter MCP Applications
 
 This repo runs three containers on a shared Docker network (`mcp-hackathon`):
 
