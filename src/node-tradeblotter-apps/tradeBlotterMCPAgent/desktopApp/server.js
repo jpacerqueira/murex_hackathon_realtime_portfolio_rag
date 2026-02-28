@@ -21,12 +21,42 @@ const geminiContextMaxOutputTokens = Number.parseInt(
 const geminiThinkingLevel = process.env.GEMINI_THINKING_LEVEL || "high";
 const geminiMaxToolSteps = Number.parseInt(process.env.GEMINI_MAX_TOOL_STEPS ?? "5", 10);
 
+const LOG = {
+  api: (method, path, status, detail = "") => {
+    console.log(`[API] ${method} ${path} ${status}${detail ? ` ${detail}` : ""}`);
+  },
+  mcp: (method, path, status, detail = "") => {
+    console.log(`[MCP] ${method} ${path} ${status}${detail ? ` ${detail}` : ""}`);
+  },
+  prompt: (event, detail = "") => {
+    console.log(`[PROMPT] ${event}${detail ? ` ${detail}` : ""}`);
+  },
+  model: (event, detail = "") => {
+    console.log(`[MODEL] ${event}${detail ? ` ${detail}` : ""}`);
+  }
+};
+
+function truncate(str, maxLen = 200) {
+  if (typeof str !== "string") return String(str).slice(0, maxLen);
+  return str.length <= maxLen ? str : str.slice(0, maxLen) + "…";
+}
+
 app.use(express.json({ limit: "1mb" }));
+app.use((req, _res, next) => {
+  LOG.api(req.method, req.path, "(start)");
+  next();
+});
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/css", express.static(path.join(__dirname, "css")));
 
 async function proxyRequest(method, urlPath, body) {
   const targetUrl = `${mcpBaseUrl}${urlPath}`;
+  const bodyPreview =
+    body && method !== "GET"
+      ? truncate(JSON.stringify(body), 150)
+      : "";
+  LOG.mcp(method, urlPath, "(request)", bodyPreview ? `body=${bodyPreview}` : "");
+
   const init = {
     method,
     headers: { "Content-Type": "application/json" }
@@ -44,6 +74,19 @@ async function proxyRequest(method, urlPath, body) {
   } catch {
     payload = text;
   }
+
+  const status = response.status;
+  const resultPreview =
+    typeof payload === "string"
+      ? truncate(payload, 120)
+      : Array.isArray(payload)
+        ? `array(${payload.length})`
+        : payload && typeof payload === "object"
+          ? Object.keys(payload).length
+            ? `{${Object.keys(payload).slice(0, 5).join(",")}${Object.keys(payload).length > 5 ? "…" : ""}}`
+            : "{}"
+          : truncate(String(payload), 120);
+  LOG.mcp(method, urlPath, status, `result=${resultPreview}`);
 
   if (!response.ok) {
     const errorMessage = typeof payload === "string" ? payload : JSON.stringify(payload);
@@ -160,6 +203,9 @@ function extractJsonFromText(text) {
 }
 
 async function callGemini(prompt, { model = geminiModel, temperature = geminiTemperature, maxOutputTokens, thinkingLevel } = {}) {
+  const promptLen = typeof prompt === "string" ? prompt.length : 0;
+  LOG.model("request", `model=${model} promptLen=${promptLen} temperature=${temperature ?? "default"}`);
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
   const generationConfig = {
     temperature: Number.isFinite(temperature) ? temperature : 1.0
@@ -182,18 +228,22 @@ async function callGemini(prompt, { model = geminiModel, temperature = geminiTem
   const payload = await response.json();
   if (!response.ok) {
     const message = payload?.error?.message || "Gemini request failed.";
+    LOG.model("error", `model=${model} status=${response.status} message=${truncate(message, 200)}`);
     throw new Error(message);
   }
   const textParts = payload?.candidates?.[0]?.content?.parts || [];
   const combinedText = textParts.map((part) => part.text || "").join("").trim();
+  LOG.model("response", `model=${model} outputLen=${combinedText.length} preview=${truncate(combinedText, 120)}`);
   return combinedText;
 }
 
 app.get("/api/health", async (_req, res) => {
   try {
     const data = await proxyRequest("GET", "/health");
+    LOG.api("GET", "/api/health", 200);
     res.json(data);
   } catch (error) {
+    LOG.api("GET", "/api/health", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -201,8 +251,10 @@ app.get("/api/health", async (_req, res) => {
 app.get("/api/tools", async (_req, res) => {
   try {
     const data = await proxyRequest("GET", "/tools");
+    LOG.api("GET", "/api/tools", 200);
     res.json(data);
   } catch (error) {
+    LOG.api("GET", "/api/tools", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -210,8 +262,10 @@ app.get("/api/tools", async (_req, res) => {
 app.get("/api/resources", async (_req, res) => {
   try {
     const data = await proxyRequest("GET", "/resources");
+    LOG.api("GET", "/api/resources", 200);
     res.json(data);
   } catch (error) {
+    LOG.api("GET", "/api/resources", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -219,8 +273,10 @@ app.get("/api/resources", async (_req, res) => {
 app.get("/api/prompts", async (_req, res) => {
   try {
     const data = await proxyRequest("GET", "/prompts");
+    LOG.api("GET", "/api/prompts", 200);
     res.json(data);
   } catch (error) {
+    LOG.api("GET", "/api/prompts", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -229,34 +285,46 @@ app.get("/api/resource", async (req, res) => {
   try {
     const uri = req.query.uri;
     if (!uri) {
+      LOG.api("GET", "/api/resource", 400, "missing uri");
       res.status(400).json({ error: "Missing uri query parameter." });
       return;
     }
     const data = await proxyRequest("GET", `/resource?uri=${encodeURIComponent(uri)}`);
+    LOG.api("GET", "/api/resource", 200, `uri=${truncate(uri, 80)}`);
     res.json(data);
   } catch (error) {
+    LOG.api("GET", "/api/resource", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
 
 app.post("/api/tool/:name", async (req, res) => {
+  const name = req.params.name;
   try {
-    const data = await proxyRequest("POST", `/tool/${encodeURIComponent(req.params.name)}`, {
+    const data = await proxyRequest("POST", `/tool/${encodeURIComponent(name)}`, {
       arguments: req.body || {}
     });
+    LOG.api("POST", `/api/tool/${name}`, 200);
     res.json(data);
   } catch (error) {
+    LOG.api("POST", `/api/tool/${name}`, 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
 
 app.post("/api/prompt/:name", async (req, res) => {
+  const name = req.params.name;
   try {
-    const data = await proxyRequest("POST", `/prompt/${encodeURIComponent(req.params.name)}`, {
+    const data = await proxyRequest("POST", `/prompt/${encodeURIComponent(name)}`, {
       arguments: req.body || {}
     });
+    const msgCount = Array.isArray(data?.messages) ? data.messages.length : 0;
+    LOG.api("POST", `/api/prompt/${name}`, 200, `messages=${msgCount}`);
+    LOG.prompt("result", `prompt=${name} messages=${msgCount}`);
     res.json(data);
   } catch (error) {
+    LOG.api("POST", `/api/prompt/${name}`, 502, `error=${error.message}`);
+    LOG.prompt("error", `prompt=${name} error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -264,11 +332,13 @@ app.post("/api/prompt/:name", async (req, res) => {
 app.post("/api/llm/gemini", async (req, res) => {
   try {
     if (!geminiApiKey) {
+      LOG.api("POST", "/api/llm/gemini", 400, "no API key");
       res.status(400).json({ error: "Gemini API key not configured. Set GEMINI_API_KEY." });
       return;
     }
     const message = req.body?.message?.trim();
     if (!message) {
+      LOG.api("POST", "/api/llm/gemini", 400, "missing message");
       res.status(400).json({ error: "Missing message in request body." });
       return;
     }
@@ -289,7 +359,9 @@ app.post("/api/llm/gemini", async (req, res) => {
         arguments: { user_question: message }
       });
       promptMessages = Array.isArray(promptPayload?.messages) ? promptPayload.messages : [];
+      LOG.prompt("analyze_trade_query", `user_question=${truncate(message, 80)} messages=${promptMessages.length}`);
     } catch (error) {
+      LOG.prompt("analyze_trade_query failed", `error=${error?.message || error}`);
       console.warn("Failed to load MCP prompt context:", error?.message || error);
     }
 
@@ -313,6 +385,8 @@ app.post("/api/llm/gemini", async (req, res) => {
 
       if (!isToolJson) {
         const directAnswer = typeof modelText === "string" ? modelText.trim() : String(modelText);
+        LOG.api("POST", "/api/llm/gemini", 200, "directAnswer");
+        LOG.prompt("gemini result", `directAnswer preview=${truncate(directAnswer, 100)}`);
         res.json({
           message: directAnswer,
           directAnswer: true,
@@ -325,6 +399,8 @@ app.post("/api/llm/gemini", async (req, res) => {
 
       if (!modelJson.tool) {
         const lastStep = steps[steps.length - 1];
+        LOG.api("POST", "/api/llm/gemini", 200, `toolCalls=${steps.length} lastTool=${lastStep?.name}`);
+        LOG.prompt("gemini result", `toolCalls=${steps.length} message=${truncate(lastMessage, 80)}`);
         res.json({
           message: lastMessage || "No further tool selected.",
           toolCalls: steps.length ? steps : undefined,
@@ -337,11 +413,13 @@ app.post("/api/llm/gemini", async (req, res) => {
       }
 
       if (!toolNames.has(modelJson.tool)) {
+        LOG.api("POST", "/api/llm/gemini", 400, `unknown tool=${modelJson.tool}`);
         res.status(400).json({ error: `Unknown tool selected: ${modelJson.tool}` });
         return;
       }
 
       const toolArgs = modelJson.arguments || {};
+      LOG.prompt("gemini tool step", `step=${stepIndex + 1} tool=${modelJson.tool} args=${truncate(JSON.stringify(toolArgs), 100)}`);
       const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
         arguments: toolArgs
       });
@@ -350,6 +428,8 @@ app.post("/api/llm/gemini", async (req, res) => {
     }
 
     const lastStep = steps[steps.length - 1];
+    LOG.api("POST", "/api/llm/gemini", 200, `maxSteps toolCalls=${steps.length} lastTool=${lastStep?.name}`);
+    LOG.prompt("gemini result", `multiStep message=${truncate(lastMessage, 80)}`);
     res.json({
       message: lastMessage || "Max steps reached.",
       toolCalls: steps,
@@ -359,6 +439,7 @@ app.post("/api/llm/gemini", async (req, res) => {
       multiStep: true
     });
   } catch (error) {
+    LOG.api("POST", "/api/llm/gemini", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
@@ -366,6 +447,7 @@ app.post("/api/llm/gemini", async (req, res) => {
 app.post("/api/llm/summarize", async (req, res) => {
   try {
     if (!geminiApiKey) {
+      LOG.api("POST", "/api/llm/summarize", 400, "no API key");
       res.status(400).json({ error: "Gemini API key not configured. Set GEMINI_API_KEY." });
       return;
     }
@@ -398,8 +480,11 @@ app.post("/api/llm/summarize", async (req, res) => {
       thinkingLevel: "low"
     });
 
+    LOG.api("POST", "/api/llm/summarize", 200, `summaryLen=${modelText?.length ?? 0}`);
+    LOG.prompt("summarize result", `preview=${truncate(modelText, 100)}`);
     res.json({ summary: modelText });
   } catch (error) {
+    LOG.api("POST", "/api/llm/summarize", 502, `error=${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
