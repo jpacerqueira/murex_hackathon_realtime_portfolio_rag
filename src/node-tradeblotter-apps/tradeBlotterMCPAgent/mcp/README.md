@@ -21,7 +21,7 @@ This opens a web interface where you can:
 
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   VS Code /     │  stdio  │   MCP Server     │  HTTP   │  FastAPI Server │
+│   DesktopApp    │  stdio  │   MCP Server     │  HTTP   │  FastAPI Server │
 │ Claude Desktop  │◄───────►│ (mcp_auth_       │◄───────►│ (simple_api_    │
 │                 │   MCP   │  server.py)      │ REST API│  server.py)     │
 │   AI Assistant  │ Protocol│                  │         │                 │
