@@ -26,8 +26,8 @@ This opens a web interface where you can:
 │                 │   MCP   │  server.py)      │ REST API│  server.py)     │
 │   AI Assistant  │ Protocol│                  │         │                 │
 │                 │         │ • Tools          │         │ • /auth         │
-│                 │         │ • Resources      │         │ • /userInfo     │
-│                 │         │ • Prompts        │         │ • /logout       │
+│                 │   MCP   │ • Resources      │         │ • /userInfo     │
+│                 │  http   │ • Prompts        │         │ • /logout       │
 │                 │         │ • Session State  │         │ • /health       │
 └─────────────────┘         └──────────────────┘         └─────────────────┘
 ```
