@@ -737,8 +737,7 @@ document.getElementById("approveResultsForEmail").addEventListener("click", () =
   // Force conversion of lastAssistantMessage result to JSON on email
   if ( typeof parsed !== "object" && typeof parsed === "string") {
     const jsonTextForced = JSON.stringify({ LastMessage: parsed });
-    console.log(jsonTextForced);   // ← undefined variable, throws
-    parsed = JSON.parse(jsonTextForced);
+    parsed = parseJsonOrPythonDict(jsonTextForced);
   }
   if (!parsed || typeof parsed !== "object") {
     appendMessage("assistant", "Last response is not JSON. Approve results for email only works when the output is JSON (e.g. trade data).");
