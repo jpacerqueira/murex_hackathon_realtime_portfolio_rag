@@ -735,7 +735,7 @@ document.getElementById("approveResultsForEmail").addEventListener("click", () =
   }
   const parsed = parseJsonOrPythonDict(lastAssistantMessage);
   // Force conversion of lastAssistantMessage result to JSON on email
-  if ( typeof parsed !== "object" && typeof parsed === "string") {
+  if (!parsed || typeof parsed !== "object") {
     const jsonTextForced = JSON.stringify({ LastMessage: parsed });
     parsed = parseJsonOrPythonDict(jsonTextForced);
   }
