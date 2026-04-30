@@ -29,5 +29,6 @@ This opens a web interface where you can:
 │                 │   MCP   │ • Resources      │         │ • /userInfo     │
 │                 │  http   │ • Prompts        │         │ • /logout       │
 │                 │         │ • Session State  │         │ • /health       │
+│                 │         │ • API  services  │         │ • /trade{apis*} │
 └─────────────────┘         └──────────────────┘         └─────────────────┘
 ```
