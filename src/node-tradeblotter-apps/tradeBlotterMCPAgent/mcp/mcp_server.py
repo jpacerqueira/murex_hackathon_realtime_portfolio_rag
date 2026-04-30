@@ -133,7 +133,7 @@ Example: `?Typology=Spot&Status=Ins`
 - **FXFWD**: FX Forward contracts
 
 ## Trade Status
-- **CLOSED**: Dead,Closed
+- **CLOSED**: Dead, Closed, Cancel, Cncl
 - **Inserted**: Ins, New, Fresh, Alive
 
 ## Time References
