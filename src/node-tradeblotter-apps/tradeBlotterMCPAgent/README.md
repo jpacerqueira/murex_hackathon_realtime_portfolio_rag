@@ -2,8 +2,8 @@
 
 ## Trade Blotter Multi-Agent Desktop APP
 ## Built with GEMINI 3.1 -  MCP + API Knowledge transfer + HITL ADK
-### Test the Desktop chatbot
-### Test the Human in the Loop process with ADK and steps explained
+### Test the Concierge chatbot
+### Test the Human-in-the-Loop process(HITL) with explained steps
 
 ![Trade Blotter MCP - Real-Time Portfolio](images/image1.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image2.png)
