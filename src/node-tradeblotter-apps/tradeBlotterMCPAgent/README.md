@@ -1,6 +1,7 @@
-# Trade Blotter Concierge Agent with HITL 
+# Trade Blotter Concierge
 
-# Trade Blotter using MCP+API Knoledge transfer + HITL ADK
+## Trade Blotter Multi-Agent Desktop APP
+## Built with GEMINI 3.1 -  MCP + API Knoledge transfer + HITL ADK
 
 ![Trade Blotter MCP - Real-Time Portfolio](images/image1.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image2.png)
