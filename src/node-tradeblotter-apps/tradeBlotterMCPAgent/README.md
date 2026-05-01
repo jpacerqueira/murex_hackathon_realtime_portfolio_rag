@@ -1,6 +1,6 @@
-# Trade Blotter MCP Stack
+# Trade Blotter Concierge Agent with HITL 
 
-# Trade Blotter using MCP
+# Trade Blotter using MCP+API Knoledge transfer + HITL ADK
 
 ![Trade Blotter MCP - Real-Time Portfolio](images/image1.png)
 ![Trade Blotter MCP - Real-Time Portfolio](images/image2.png)
