@@ -1,3 +1,20 @@
+# docker-compose.yml — full stack for the Murex trade-blotter hackathon.
+#
+# Services:
+#   * trade-api               REST back-end (your existing image, port 8000)
+#   * mcp-server              MCP HTTP bridge / mcp_http_server.py (port 7001)
+#   * desktop-app             existing UI (port 5173)
+#   * trade-blotter-hitl-agent  NEW — Google ADK agent with HITL approval
+#                               on mutating MCP tools, served via `adk web`
+#                               on host port 8200 -> container 8000.
+#
+# Bring up the whole stack:
+#     export GOOGLE_API_KEY=...        # or GEMINI_API_KEY
+#     docker compose up --build
+#
+# Or only the agent (assumes the rest is already running):
+#     docker compose up --build trade-blotter-hitl-agent
+
 services:
   trade-api:
     build:
@@ -6,7 +23,7 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - mcp-trade-blotter
+      - mcp-hackathon
 
   mcp-server:
     build:
@@ -23,10 +40,18 @@ services:
       - MX_FO_DESK=XXXXXXXXX # Front office desk
     ports:
       - "7001:7001"
+    # Make `mcp-server` healthy when /health on the bridge responds, so the
+    # agent's `depends_on: condition: service_healthy` actually means something.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     depends_on:
       - trade-api
     networks:
-      - mcp-trade-blotter
+      - mcp-hackathon
 
   desktop-app:
     build:
@@ -44,8 +69,8 @@ services:
     depends_on:
       - mcp-server
     networks:
-      - mcp-trade-blotter
-  
+      - mcp-hackathon
+
   trade-blotter-hitl-agent:
     build:
       context: ./trade-blotter-hitl-agent
@@ -62,7 +87,7 @@ services:
       # is forwarded; pydantic-settings reads GOOGLE_API_KEY.
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - ADK_MODEL=${ADK_MODEL:-gemini-3.1-pro-preview}
+      - ADK_MODEL=${ADK_MODEL:-gemini-2.5-flash}
 
       # --- HITL classification ---------------------------------------------
       - TOOL_CLASSIFICATION_PATH=/app/assets/tool_classification.yaml
@@ -76,11 +101,18 @@ services:
       # trade-api already owns 8000 on the host.
       - "8200:8000"
     depends_on:
-      - mcp-server
+      mcp-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/list-apps >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+    restart: unless-stopped
     networks:
-      - mcp-trade-blotter
-
+      - mcp-hackathon
 
 networks:
-  mcp-trade-blotter:
-    name: mcp-trade-blotter
+  mcp-hackathon:
+    name: mcp-hackathon
