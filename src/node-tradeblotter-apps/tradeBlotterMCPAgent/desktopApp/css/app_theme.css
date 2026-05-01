@@ -15,8 +15,9 @@
   --dxc-surface-2: var(--fbd-surface-2);
   --dxc-text: var(--fbd-text);
   --dxc-muted: var(--fbd-muted);
-  --dxc-accent: var(--fbd-accent);
-  --dxc-accent-strong: var(--fbd-accent-strong);
+  /* Desktop shell primary actions: slate grey (darker than border/surface-2, distinct from muted text) */
+  --dxc-accent: #485064;
+  --dxc-accent-strong: #3a4150;
   --dxc-link: var(--fbd-link);
   --dxc-border: var(--fbd-border);
 }
