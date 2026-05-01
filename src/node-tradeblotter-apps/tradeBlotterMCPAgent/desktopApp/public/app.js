@@ -898,6 +898,18 @@ function setupTabs() {
       });
       if (chatPanel) chatPanel.hidden = tab !== "chat";
       if (hitlPanel) hitlPanel.hidden = tab !== "hitl";
+      if (tab === "hitl" && hitlPanel) {
+        // Layout must settle after hiding the chat panel; then scroll past the tab bar
+        // by ~6 viewport "steps" so the HITL / iframe region is in view (not just tabs).
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const hitlTop = hitlPanel.getBoundingClientRect().top + window.scrollY;
+            const stepPx = window.innerHeight * 0.125;
+            const extraDown = stepPx * 6;
+            window.scrollTo({ top: hitlTop + extraDown, behavior: "smooth" });
+          });
+        });
+      }
     });
   });
 }
