@@ -9,6 +9,16 @@
   --fbd-accent-strong: #fea449;
   --fbd-link: #7bb0e8;
   --fbd-border: #c5d0e0;
+  /* Desktop shell (index.html) uses --dxc-*; mirror fbd so vars always resolve */
+  --dxc-bg: var(--fbd-bg);
+  --dxc-surface: var(--fbd-surface);
+  --dxc-surface-2: var(--fbd-surface-2);
+  --dxc-text: var(--fbd-text);
+  --dxc-muted: var(--fbd-muted);
+  --dxc-accent: var(--fbd-accent);
+  --dxc-accent-strong: var(--fbd-accent-strong);
+  --dxc-link: var(--fbd-link);
+  --dxc-border: var(--fbd-border);
 }
  
  .stApp {

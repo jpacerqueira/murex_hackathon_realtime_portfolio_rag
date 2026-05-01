@@ -14,6 +14,8 @@
 fail_closed: true
 
 read_only:
+  - "trade_api_*"      # direct REST to Trade API (HITL); always read-only
+  - "check_*"
   - "list_*"
   - "get_*"
   - "search_*"

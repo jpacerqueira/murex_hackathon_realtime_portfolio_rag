@@ -49,6 +49,8 @@ APPROVAL_STATE_KEY = "trade_blotter_hitl.tickets"
 
 DEFAULT_CLASSIFICATION: dict[str, list[str]] = {
     "read_only": [
+        "trade_api_*",
+        "check_*",
         "list_*", "get_*", "search_*", "read_*", "describe_*",
         "fetch_*", "show_*", "find_*", "lookup_*", "query_*",
         "health", "ping",

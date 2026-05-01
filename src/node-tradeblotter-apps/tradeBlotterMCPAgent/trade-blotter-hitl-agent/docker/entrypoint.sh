@@ -32,5 +32,22 @@ fi
 # discovers `trade_blotter_hitl_agent/` as a sibling directory.
 cd /app
 
+A2A_PORT="${A2A_PORT:-8100}"
+A2A_ENABLED="${A2A_ENABLED:-true}"
+UVICORN_PID=""
+
+if [[ "${A2A_ENABLED}" == "true" ]]; then
+  echo "[entrypoint] starting A2A HTTP on 0.0.0.0:${A2A_PORT}"
+  python -m uvicorn trade_blotter_hitl_agent.a2a_app:app --host 0.0.0.0 --port "${A2A_PORT}" &
+  UVICORN_PID=$!
+  _stop_a2a() {
+    if [[ -n "${UVICORN_PID}" ]]; then
+      kill -TERM "${UVICORN_PID}" 2>/dev/null || true
+      wait "${UVICORN_PID}" 2>/dev/null || true
+    fi
+  }
+  trap _stop_a2a EXIT INT TERM
+fi
+
 echo "[entrypoint] launching: $*"
-exec "$@"
+"$@"

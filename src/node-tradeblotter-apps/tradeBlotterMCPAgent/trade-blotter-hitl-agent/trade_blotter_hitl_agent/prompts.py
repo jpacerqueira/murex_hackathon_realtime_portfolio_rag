@@ -3,15 +3,30 @@
 from __future__ import annotations
 
 
-def build_instruction(read_only: list[str], mutating: list[str]) -> str:
-    """Compose the agent's instruction from the discovered tool surface."""
+def build_instruction(
+    read_only: list[str],
+    mutating: list[str],
+    *,
+    skills_digest: str = "",
+) -> str:
+    """Compose the agent's instruction from the discovered tool surface and skills."""
     read_only_list = "\n  - " + "\n  - ".join(sorted(read_only)) if read_only else " (none)"
     mutating_list = "\n  - " + "\n  - ".join(sorted(mutating)) if mutating else " (none)"
 
-    return f"""You are the Trade Blotter Concierge, an ADK agent that talks to a Trade
+    base = f"""You are the Trade Blotter Concierge, an ADK agent that talks to a Trade
 Blotter system through an MCP HTTP bridge. Your job is to help the operator
 inspect the blotter, place trades, and amend or cancel them, while protecting
 them from acting on stale information or fat-fingered orders.
+
+The skills appendix includes a **full copy of MCP resources/prompts/tools** plus a
+**desktop stack mirror** (Express + browser) so you can explain and simulate how the
+**Trade chat** tab behaves (JSON tool loop, approval gate, heuristics) while you use
+native ADK tools here.
+
+You may also have **trade_api_*** tools: they call the **Trade Blotter REST API**
+directly (same host the MCP server uses), with **Bearer / Murex OAuth** when
+configured. Use them to interrogate views and data without going through the MCP
+bridge when helpful; MCP tools remain fully supported.
 
 # Tool surface
 
@@ -59,3 +74,13 @@ You MUST pass the same `arguments` to `execute_*` that you proposed in
 - If a tool returns `{{"status": "error", ...}}`, surface the error verbatim
   and ask the user how to proceed.
 """
+    digest = (skills_digest or "").strip()
+    if not digest:
+        return base
+    return (
+        base
+        + "\n\n# MCP resources, prompts, tool reference, and desktop full-stack skills\n\n"
+        + "Use this bundle as ground truth for vocabulary, workflows, filter fields, "
+        + "and how the desktop Trade chat + HITL tab behave.\n\n"
+        + digest
+    )

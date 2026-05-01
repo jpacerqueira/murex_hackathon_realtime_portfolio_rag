@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MY Trader copilot</title>
+    <title>MY Trader Concierge</title>
     <link rel="stylesheet" href="/css/app_theme.css" />
     <style>
       body {
@@ -166,24 +166,29 @@
       }
       button {
         background: var(--dxc-accent);
-        color: var(--dxc-bg);
-        border: none;
+        color: #ffffff;
+        border: 1px solid color-mix(in srgb, var(--dxc-accent) 70%, #1a1d26);
         border-radius: 8px;
         padding: 0.6rem 1rem;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
+        box-shadow: 0 1px 2px rgba(26, 29, 38, 0.12);
       }
       button:hover {
         background: var(--dxc-accent-strong);
+        border-color: color-mix(in srgb, var(--dxc-accent-strong) 75%, #1a1d26);
       }
       .button-secondary {
-        background: transparent;
-        color: var(--dxc-text);
-        border: 1px solid var(--dxc-border);
+        background: var(--dxc-surface);
+        color: var(--dxc-muted);
+        border: 2px solid var(--dxc-border);
+        font-weight: 600;
+        box-shadow: none;
       }
       .button-secondary:hover {
+        background: var(--dxc-surface-2);
         border-color: var(--dxc-accent);
-        color: var(--dxc-accent);
+        color: var(--dxc-text);
       }
       .toolbar {
         display: flex;
@@ -242,19 +247,71 @@
         color: var(--dxc-muted);
         font-size: 0.9rem;
       }
+      .tab-bar {
+        display: flex;
+        gap: 0.625rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      .tab-button {
+        flex: 1 1 auto;
+        min-width: 11.25rem;
+        background: var(--dxc-surface-2);
+        color: var(--dxc-muted);
+        border: 1px solid var(--dxc-border);
+        border-radius: 10px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .tab-button.tab-active {
+        background: var(--dxc-accent);
+        color: #ffffff;
+        border: 1px solid color-mix(in srgb, var(--dxc-accent) 70%, #1a1d26);
+        box-shadow: 0 1px 2px rgba(26, 29, 38, 0.12);
+      }
+      .tab-panel[hidden] {
+        display: none !important;
+      }
+      .hitl-iframe-wrap {
+        margin-top: 0.75rem;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--dxc-border);
+        background: #fff;
+        min-height: 520px;
+      }
+      .hitl-iframe-wrap iframe {
+        width: 100%;
+        height: 560px;
+        border: 0;
+        display: block;
+      }
+      #approvalGate {
+        border-left: 4px solid #c9a227;
+      }
+      #approvalGate h3 {
+        margin-top: 0;
+        font-size: 1rem;
+      }
     </style>
   </head>
   <body class="stApp">
     <div class="container">
       <header>
-        <h1>MY Trader copilot <img src="/css/FBData_icon.png" alt="FBData" class="app-title-icon" /></h1>
+        <h1>MY Trader Concierge <img src="/css/FBData_icon.png" alt="FBData" class="app-title-icon" /></h1>
         <div class="toolbar">
           <button class="button-secondary" id="toggleMcpPanel">Hide MCP Control</button>
           <div class="status-pill" id="healthStatus">Checking MCP bridge...</div>
         </div>
       </header>
 
-      <main class="panel chat">
+      <nav class="tab-bar" aria-label="Main views">
+        <button type="button" class="tab-button tab-active" data-tab="chat" id="tabBtnChat">Trade chat</button>
+        <button type="button" class="tab-button" data-tab="hitl" id="tabBtnHitl">Human in the loop</button>
+      </nav>
+
+      <main class="panel chat" id="tabPanelChat">
         <div>
           <h2>Trade Blotter Chat</h2>
         </div>
@@ -267,6 +324,18 @@
             placeholder="Ask about trades, views, schema, or health. Example: Show EUR/USD trades with Status=Ins"
           ></textarea>
           <button id="sendMessage">Send</button>
+        </div>
+
+        <div class="panel" id="approvalGate" style="display: none;">
+          <h3>Approve mutating operation</h3>
+          <p style="margin: 0 0 0.5rem; color: var(--dxc-muted); font-size: 0.9rem;">
+            The assistant wants to run a state-changing MCP tool. Review the payload, then approve or reject.
+          </p>
+          <pre id="approvalDetails"></pre>
+          <div class="toolbar">
+            <button type="button" id="approvalApprove">Approve and run</button>
+            <button type="button" class="button-secondary" id="approvalReject">Reject</button>
+          </div>
         </div>
 
         <div class="toolbar">
@@ -325,6 +394,38 @@
         </section>
 
       </main>
+
+      <div id="tabPanelHitl" hidden>
+        <section class="panel">
+          <h2>ADK concierge (full HITL)</h2>
+          <p>
+            Google ADK web UI with <code>request_trade_action</code> / <code>execute_*</code> gating.
+            At startup the HITL agent loads the same <strong>MCP resources, prompts, and tools</strong> as this stack,
+            plus markdown skills that describe how the <strong>Trade chat</strong> tab (Express + this page) behaves—so
+            answers here stay aligned with the desktop Concierge.
+          </p>
+          <p style="margin: 0;">
+            <a class="link" id="hitlAdkOpen" href="#" target="_blank" rel="noopener noreferrer">Open ADK UI in a new tab</a>
+          </p>
+          <div class="hitl-iframe-wrap">
+            <iframe id="hitlAdkFrame" title="Trade Blotter ADK HITL"></iframe>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Task planning &amp; validation (A2A)</h2>
+          <p>
+            Calls the HITL container&rsquo;s A2A JSON API (plan decomposition and step validation) via the desktop proxy.
+          </p>
+          <label for="hitlPlanGoal">Goal</label>
+          <textarea id="hitlPlanGoal" style="min-height: 72px; width: 100%; box-sizing: border-box;" placeholder="e.g. List views, then query trades for view X with Status=Ins"></textarea>
+          <div class="toolbar" style="margin-top: 0.75rem;">
+            <button type="button" class="button-secondary" id="hitlPlanRun">Generate plan</button>
+            <button type="button" class="button-secondary" id="hitlSkillsLoad">Load HITL skills summary</button>
+          </div>
+          <pre id="hitlPlanOutput" style="margin-top: 0.75rem;">Run &ldquo;Generate plan&rdquo; or open the ADK iframe.</pre>
+        </section>
+      </div>
     </div>
 
     <script type="module" src="/app.js"></script>

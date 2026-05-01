@@ -2,6 +2,8 @@
 
 Run the desktop-style MCP UI without containers.
 
+The Gemini system prompt prepends **`../trade-blotter-hitl-agent/assets/includes/desktop_copilot_policy.md`** when that file exists (Docker copies it to `/app/hitl-policy/`). Edit that file to keep desktop and HITL behavior aligned.
+
 ## Prerequisites
 
 - Node.js (LTS recommended)

@@ -1,210 +1,117 @@
 # Trade Blotter HITL Agent
 
-A runnable [Google ADK](https://google.github.io/adk-docs/) agent package that
-talks to a Trade Blotter [MCP](https://modelcontextprotocol.io/) server through
-the FastAPI HTTP bridge defined in `mcp_http_server.py`. Read-only MCP tools
-execute directly; mutating tools (place / cancel / amend / etc.) are gated by
-a Human-in-the-Loop approval step using ADK's `LongRunningFunctionTool`.
+Google **ADK** agent that uses the Trade Blotter MCP server via the HTTP bridge
+(`mcp_http_server.py`). Read-only tools run immediately; mutating tools require
+human approval (`request_trade_action` → `execute_*`, with a `before_tool_callback`
+ticket check).
 
-The package is also a self-contained **Agent Skill** following the
-[agentskills.io specification](https://agentskills.io/specification): the root
-contains a `SKILL.md`, plus `scripts/`, `references/`, and `assets/`
-directories.
+An **A2A HTTP API** (FastAPI) runs in the same container on port **8100** for
+planning, classification, and validation—used by the desktop app.
 
-## Why this exists
+At **startup**, the agent loads a **skills bundle** into its system instruction:
+all MCP **resources** (full text), **prompt** templates (via the bridge), **tool**
+schemas, plus `assets/includes/desktop_copilot_policy.md` (same file the desktop
+prepends to the Gemini prompt). Optionally set `HITL_WRITE_SKILLS_SNAPSHOT=true`
+to write the compiled markdown to `assets/cache/compiled_skills.md` for inspection.
 
-The reference Trade Blotter MCP server runs over stdio and is wrapped by
-`mcp_http_server.py`, a tiny FastAPI bridge that exposes the MCP surface as
-plain REST. That makes it trivial for *any* HTTP-capable agent runtime to use
-the blotter, but it also strips away the usual MCP transport-level safety
-features. This package gives you back a strong, opinionated default:
+## Run with Docker Compose (only supported path)
 
-* Tool discovery happens at startup against `/tools`.
-* Each tool is classified as `read_only` or `mutating` (see
-  `assets/tool_classification.yaml`).
-* A single `request_trade_action` `LongRunningFunctionTool` is the only path
-  to a mutating call. The runner pauses; a human approves or rejects; the
-  agent then calls the corresponding `execute_<name>` tool, which is
-  defended by a `before_tool_callback` checking the approval ticket.
-
-## Run with Docker Compose (recommended)
-
-This repo already has a `docker-compose.yml` at the project root with
-`trade-api`, `mcp-server`, and `desktop-app`. The agent is wired in as a
-fourth service called `trade-blotter-hitl-agent` on the same `mcp-hackathon`
-network.
+From **`tradeBlotterMCPAgent/`** (parent of this folder):
 
 ```bash
-# from the project root (where docker-compose.yml lives)
-export GOOGLE_API_KEY=...                    # or GEMINI_API_KEY
-docker compose up --build trade-blotter-hitl-agent
-```
-
-The agent's web UI is published at **http://localhost:8200** (host port
-8200 → container 8000, since `trade-api` already owns 8000 on the host).
-Inside the network it talks to `http://mcp-server:7001`.
-
-What happens at boot:
-
-1. The container's entrypoint waits up to 120 seconds for
-   `http://mcp-server:7001/health` to respond. (The compose file also gates
-   the agent on `mcp-server`'s healthcheck via
-   `depends_on: condition: service_healthy`.)
-2. The startup log dumps every MCP tool / resource / prompt the bridge
-   exposes — handy for sanity-checking classification rules.
-3. `adk web` starts on `0.0.0.0:8000`. Open the browser at port 8200, pick
-   the `trade_blotter_hitl_agent` app, and chat. When the model calls
-   `request_trade_action`, the web UI surfaces a pending FunctionCall and
-   lets you respond with an approval `FunctionResponse` — that's the HITL
-   loop.
-
-Stop the agent without touching the rest of the stack:
-
-```bash
-docker compose stop trade-blotter-hitl-agent
-docker compose rm -f trade-blotter-hitl-agent
-```
-
-Bring everything up:
-
-```bash
+export GOOGLE_API_KEY=...   # or set in a `.env` next to docker-compose.yml
 docker compose up --build
 ```
 
-### Container-only environment variables
+No install or manual bridge step is required: `trade-api` → `mcp-server` → this
+agent and `desktop-app` start in order on the `mcp-trade-blotter` network.
 
-| Variable                    | Default                       | Meaning                                                          |
-| --------------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `MCP_BRIDGE_URL`            | `http://mcp-server:7001`      | Where the agent finds the bridge inside the compose network.     |
-| `MCP_BRIDGE_TIMEOUT`        | `30`                          | HTTP timeout per bridge call.                                    |
-| `MCP_BRIDGE_WAIT_SECONDS`   | `120`                         | How long the entrypoint polls `/health` before giving up.        |
-| `MCP_LIST_TOOLS_ON_STARTUP` | `true`                        | Dump the discovered tool surface to container logs at boot.      |
-| `GOOGLE_API_KEY`            | (forwarded from host)         | Required by ADK's Gemini client.                                 |
-| `ADK_MODEL`                 | `gemini-3.1-pro-preview`      | Override to use a different Gemini model.                        |
-| `HITL_FAIL_CLOSED`          | `true`                        | Treat unknown MCP tools as mutating (require approval).          |
-| `TOOL_CLASSIFICATION_PATH`  | `/app/assets/tool_classification.yaml` | Override the classification YAML inside the image.        |
+| URL (host) | Service |
+|------------|---------|
+| http://localhost:8200 | ADK web UI (`adk web`) |
+| http://localhost:8100 | A2A JSON API (`/health`, `/v1/a2a/...`) |
+| http://localhost:5173 | Desktop app (chat + HITL tab) |
 
-## Install (local dev, without Docker)
-
-Requires Python 3.10+.
+Stop only this service:
 
 ```bash
-cd trade-blotter-hitl-agent
-uv venv && source .venv/bin/activate
-uv pip install -e .[dev]
+docker compose stop trade-blotter-hitl-agent
 ```
 
-(or `python -m venv .venv && pip install -e .[dev]`)
+### Environment (set in compose or host `.env`)
 
-## Configure
+| Variable | Default (in compose) | Meaning |
+|----------|----------------------|---------|
+| `MCP_BRIDGE_URL` | `http://mcp-server:7001` | MCP HTTP bridge inside the stack |
+| `GOOGLE_API_KEY` / `GEMINI_API_KEY` | from host | Gemini for ADK and A2A |
+| `ADK_MODEL` | `gemini-3.1-pro-preview` | Model name |
+| `A2A_PORT` | `8100` | A2A listener |
+| `A2A_ENABLED` | `true` | Set `false` to skip the sidecar API |
+| `MCP_BRIDGE_WAIT_SECONDS` | `120` | Entrypoint polls bridge `/health` |
+| `TOOL_CLASSIFICATION_PATH` | `/app/assets/tool_classification.yaml` | Read-only vs mutating rules |
+| `HITL_FAIL_CLOSED` | `true` | Unknown tools treated as mutating |
+| `HITL_SKILLS_MAX_CHARS` | `120000` | Cap on injected skills digest (`0` = unlimited) |
+| `HITL_WRITE_SKILLS_SNAPSHOT` | `false` | Write compiled digest to `HITL_SKILLS_SNAPSHOT_PATH` |
+| `TRADE_API_BASE_URL` | `http://trade-api:8000` | REST API for **`trade_api_*`** direct tools |
+| `TRADE_API_DIRECT_TOOLS` | `true` | Register `trade_api_health`, `trade_api_list_views`, `trade_api_get_view` |
+| `TRADE_API_BEARER_TOKEN` | (unset) | Optional static Bearer for secured Trade API |
+| `MX_*` / `MX_LOAD_BALANCER_URL` | (unset) | Murex OAuth (same flow as `mcp/token_manager`) when API is not local mock |
+
+See `.env.example` for variable names when tuning a compose override.
+
+### Inspect bridge tools from the running container
 
 ```bash
-cp .env.example .env
-$EDITOR .env
+docker compose exec trade-blotter-hitl-agent trade-blotter-list-tools
 ```
 
-Minimum settings:
+## HITL flow (short)
 
-| Variable          | Purpose                                                  |
-| ----------------- | -------------------------------------------------------- |
-| `MCP_BRIDGE_URL`  | Where `mcp_http_server.py` is listening.                 |
-| `GOOGLE_API_KEY`  | Gemini API key (or use Vertex AI env vars instead).      |
-| `ADK_MODEL`       | Defaults to `gemini-3.1-pro-preview`.                    |
+1. Model calls `request_trade_action` with tool name + arguments → runner pauses.
+2. Human approves in the ADK UI (or the desktop chat gate for mutating tools).
+3. Model calls `execute_<tool>` with the same arguments and `ticket_id`.
+4. `before_tool_callback` rejects mismatched or unapproved tickets.
 
-## Run
-
-Start the MCP HTTP bridge in one terminal:
-
-```bash
-uvicorn mcp_http_server:app --host 0.0.0.0 --port 8080
-```
-
-Smoke-test that the agent can see it:
-
-```bash
-python scripts/list_mcp_tools.py
-# or, after install:
-trade-blotter-list-tools
-```
-
-Then run the agent:
-
-```bash
-adk run trade_blotter_hitl_agent      # terminal chat
-# or
-adk web                               # browser dev UI
-```
-
-## How a mutating call flows
-
-```
-user: "cancel trade T-123 on AAPL"
-agent: list_open_trades()                              # read-only, runs immediately
-agent: request_trade_action(
-            tool="cancel_trade",
-            arguments={"trade_id": "T-123"},
-            rationale="user asked to cancel T-123")
-runner: pauses with FunctionCall {request_trade_action ...}
-host:   surfaces ticket "tb-1a2b3c4d" to a human
-human:  approves
-host:   sends FunctionResponse {status:"approved", ticketId:"tb-1a2b3c4d", ...}
-agent: execute_cancel_trade(ticket_id="tb-1a2b3c4d", trade_id="T-123")
-                # before_tool_callback verifies the ticket
-                # then the bridge POST /tool/cancel_trade is hit
-agent: "T-123 cancelled at 14:02:11."
-```
-
-See `references/ADK_HITL.md` for the annotated FunctionResponse shape.
-
-## Tests
-
-```bash
-pytest -q
-```
-
-The test suite uses `respx` to mock the MCP HTTP bridge — no real network is
-needed.
-
-## Validating the skill
-
-```bash
-pipx run skills-ref validate ./
-```
+**Limits:** HITL reduces accidental writes; humans must still review payloads.
+It does not replace authn/z on the bridge or trade API.
 
 ## Layout
 
 ```
 trade-blotter-hitl-agent/
-├── SKILL.md
-├── README.md
+├── Dockerfile
+├── docker/entrypoint.sh
 ├── pyproject.toml
 ├── .env.example
-├── Dockerfile                    # multi-stage agent image
-├── .dockerignore
-├── docker/
-│   └── entrypoint.sh             # wait-for-bridge + adk web launcher
+├── SKILL.md
+├── assets/
+│   ├── tool_classification.yaml
+│   ├── includes/
+│   │   ├── desktop_copilot_policy.md   # tool/JSON rules (also prepended in desktop Gemini)
+│   │   └── desktop_stack_behaviour.md  # server.js + app.js behaviour mirror
+│   └── cache/
 ├── trade_blotter_hitl_agent/
-│   ├── __init__.py
 │   ├── agent.py
+│   ├── a2a_app.py
+│   ├── skills_builder.py
+│   ├── trade_api_client.py
+│   ├── direct_trade_tools.py
+│   ├── murex_auth.py
 │   ├── mcp_client.py
 │   ├── tool_factory.py
 │   ├── hitl.py
 │   ├── prompts.py
 │   ├── config.py
 │   └── scripts_entry.py
-├── scripts/
-│   ├── list_mcp_tools.py
-│   └── run_dev.sh
-├── references/
-│   ├── ADK_HITL.md
-│   ├── MCP_BRIDGE.md
-│   └── SECURITY.md
-├── assets/
-│   └── tool_classification.yaml
 └── tests/
-    ├── test_mcp_client.py
-    └── test_tool_factory.py
 ```
 
-The merged `docker-compose.yml` lives one level up, alongside `tradeQueryApi/`,
-`mcp/`, and `desktopApp/`.
+The merged `docker-compose.yml` lives in the parent directory.
+
+## Tests (contributors, local checkout)
+
+```bash
+cd trade-blotter-hitl-agent
+pip install -e '.[dev]'
+pytest -q
+```

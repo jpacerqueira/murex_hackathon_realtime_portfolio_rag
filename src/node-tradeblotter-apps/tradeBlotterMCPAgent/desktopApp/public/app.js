@@ -10,6 +10,9 @@ const mcpPanel = document.getElementById("mcpPanel");
 const summarizeChatButton = document.getElementById("summarizeChat");
 const clearChatButton = document.getElementById("clearChat");
 
+let appConfig = { hitlAdkWebUrl: "http://localhost:8200", hitlA2aConfigured: true, toolPolicy: {} };
+let pendingApprovalPayload = null;
+
 let lastAssistantMessage = "";
 let lastAssistantHtml = "";
 const chatHistory = [];
@@ -463,18 +466,35 @@ async function loadDiscovery(action) {
   }
 }
 
-async function handleGeminiMessage(message) {
-  await maybeSummarizeHistory();
-  const context = chatHistory
-    .filter((entry) => entry.content && entry.content !== "Working on that...")
-    .slice(-10)
-    .map((entry) => ({ role: entry.role, content: entry.content }));
-  const result = await request("/api/llm/gemini", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, context, summary: chatSummary })
-  });
+function hideApprovalGate() {
+  const gate = document.getElementById("approvalGate");
+  if (gate) gate.style.display = "none";
+  pendingApprovalPayload = null;
+}
 
+function showApprovalGate(payload) {
+  pendingApprovalPayload = payload;
+  const gate = document.getElementById("approvalGate");
+  const pre = document.getElementById("approvalDetails");
+  if (pre) {
+    pre.textContent = JSON.stringify(
+      {
+        tool: payload.tool,
+        arguments: payload.arguments,
+        message: payload.message,
+        approvalId: payload.approvalId
+      },
+      null,
+      2
+    );
+  }
+  if (gate) {
+    gate.style.display = "";
+    gate.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function geminiResultToDisplayText(result) {
   if (result.toolCall) {
     const toolText = extractToolText(result.toolResult);
     if (toolText) {
@@ -499,6 +519,85 @@ async function handleGeminiMessage(message) {
 
   lastAssistantHtml = `<pre style="font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(formatJson(result))}</pre>`;
   return formatJson(result);
+}
+
+async function handleGeminiMessage(message, options = {}) {
+  await maybeSummarizeHistory();
+  const context = chatHistory
+    .filter((entry) => entry.content && entry.content !== "Working on that...")
+    .slice(-10)
+    .map((entry) => ({ role: entry.role, content: entry.content }));
+  const result = await request("/api/llm/gemini", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: message ?? "",
+      context,
+      summary: chatSummary,
+      resumeApprovalId: options.resumeApprovalId,
+      rejectApprovalId: options.rejectApprovalId
+    })
+  });
+
+  if (result.needsApproval) {
+    showApprovalGate(result);
+    return {
+      needsApproval: true,
+      text: result.message || "Approval required before this tool can run.",
+      result
+    };
+  }
+
+  if (result.rejected) {
+    hideApprovalGate();
+    return { text: result.message || "Cancelled.", result, rejected: true };
+  }
+
+  hideApprovalGate();
+  const text = geminiResultToDisplayText(result);
+  return { text, result };
+}
+
+async function resolveApproval(approved) {
+  if (!pendingApprovalPayload) {
+    return;
+  }
+  const approvalId = pendingApprovalPayload.approvalId;
+  pendingApprovalPayload = null;
+  hideApprovalGate();
+
+  appendMessage("user", approved ? "Approved: run the proposed operation." : "Rejected: do not run that operation.");
+  appendMessage("assistant", "Working on that...");
+  const bubble = chatWindow.lastChild.querySelector(".bubble");
+
+  try {
+    const out = await handleGeminiMessage("", {
+      resumeApprovalId: approved ? approvalId : undefined,
+      rejectApprovalId: approved ? undefined : approvalId
+    });
+
+    if (out.needsApproval) {
+      bubble.textContent = out.text;
+      lastAssistantMessage = out.text;
+      updateLastAssistantMessage(out.text);
+      showIterateHint();
+      return;
+    }
+
+    bubble.textContent = out.text;
+    lastAssistantMessage = out.text;
+    updateLastAssistantMessage(out.text);
+    if (!isJsonLikeResponse(out.text)) {
+      showIterateHint();
+    } else {
+      hideIterateHint();
+    }
+  } catch (error) {
+    bubble.textContent = `Error: ${error.message}`;
+    lastAssistantMessage = bubble.textContent;
+    updateLastAssistantMessage(lastAssistantMessage);
+    hideIterateHint();
+  }
 }
 
 function extractViewId(text) {
@@ -592,7 +691,8 @@ async function handleMcpHeuristics(message) {
 
 async function handleUserMessage(message) {
   try {
-    return await handleGeminiMessage(message);
+    const out = await handleGeminiMessage(message);
+    return out.text;
   } catch (error) {
     return `Gemini error: ${error.message}\n\n${await handleMcpHeuristics(message)}`;
   }
@@ -679,6 +779,7 @@ document.getElementById("sendMessage").addEventListener("click", async () => {
   }
   chatInput.value = "";
   hideIterateHint();
+  hideApprovalGate();
   appendMessage("user", message);
   appendMessage("assistant", "Working on that...");
   try {
@@ -775,6 +876,7 @@ clearChatButton.addEventListener("click", () => {
   chatHistory.length = 0;
   chatSummary = "";
   hideIterateHint();
+  hideApprovalGate();
   const emailPreviewInApp = document.getElementById("emailPreviewInApp");
   if (emailPreviewInApp) emailPreviewInApp.style.display = "none";
   const emailPreviewContent = document.getElementById("emailPreviewContent");
@@ -782,5 +884,73 @@ clearChatButton.addEventListener("click", () => {
   lastApprovedMailtoUrl = "";
 });
 
+document.getElementById("approvalApprove")?.addEventListener("click", () => resolveApproval(true));
+document.getElementById("approvalReject")?.addEventListener("click", () => resolveApproval(false));
+
+function setupTabs() {
+  const chatPanel = document.getElementById("tabPanelChat");
+  const hitlPanel = document.getElementById("tabPanelHitl");
+  document.querySelectorAll(".tab-button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll(".tab-button").forEach((b) => {
+        b.classList.toggle("tab-active", b === btn);
+      });
+      if (chatPanel) chatPanel.hidden = tab !== "chat";
+      if (hitlPanel) hitlPanel.hidden = tab !== "hitl";
+    });
+  });
+}
+
+async function loadAppConfig() {
+  try {
+    const cfg = await request("/api/config");
+    appConfig = { ...appConfig, ...cfg };
+    const frame = document.getElementById("hitlAdkFrame");
+    const link = document.getElementById("hitlAdkOpen");
+    const url = appConfig.hitlAdkWebUrl || "http://localhost:8200";
+    if (frame) frame.src = url;
+    if (link) link.href = url;
+  } catch {
+    const frame = document.getElementById("hitlAdkFrame");
+    const link = document.getElementById("hitlAdkOpen");
+    const fallback = "http://localhost:8200";
+    if (frame && !frame.src) frame.src = fallback;
+    if (link) link.href = fallback;
+  }
+}
+
+document.getElementById("hitlPlanRun")?.addEventListener("click", async () => {
+  const goal = document.getElementById("hitlPlanGoal")?.value?.trim();
+  const outEl = document.getElementById("hitlPlanOutput");
+  if (!goal) {
+    if (outEl) outEl.textContent = "Enter a goal first.";
+    return;
+  }
+  if (outEl) outEl.textContent = "Planning…";
+  try {
+    const data = await request("/api/hitl/plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ goal })
+    });
+    if (outEl) outEl.textContent = formatJson(data);
+  } catch (e) {
+    if (outEl) outEl.textContent = e.message;
+  }
+});
+
+document.getElementById("hitlSkillsLoad")?.addEventListener("click", async () => {
+  const outEl = document.getElementById("hitlPlanOutput");
+  try {
+    const data = await request("/api/hitl/skills");
+    if (outEl) outEl.textContent = formatJson(data);
+  } catch (e) {
+    if (outEl) outEl.textContent = e.message;
+  }
+});
+
+setupTabs();
+loadAppConfig();
 appendMessage("assistant", "Hello! Ask about trade views, schemas, or query trades. Example: list trade views.");
 loadHealth();

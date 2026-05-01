@@ -1,13 +1,111 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** Ordered markdown bundle: same files as HITL `assets/includes/` (copied to `hitl-policy/` in Docker). */
+const DESKTOP_SKILL_MARKDOWN_FILES = ["desktop_copilot_policy.md", "desktop_stack_behaviour.md"];
+
+function loadSharedDesktopCopilotPolicy() {
+  const bases = [
+    path.join(__dirname, "hitl-policy"),
+    path.join(__dirname, "..", "trade-blotter-hitl-agent", "assets", "includes")
+  ];
+  const chunks = [];
+  for (const fname of DESKTOP_SKILL_MARKDOWN_FILES) {
+    let text = "";
+    for (const base of bases) {
+      const candidate = path.join(base, fname);
+      try {
+        if (fs.existsSync(candidate)) {
+          text = fs.readFileSync(candidate, { encoding: "utf8" }).trim();
+          break;
+        }
+      } catch {
+        /* try next base */
+      }
+    }
+    if (text) chunks.push(text);
+  }
+  return chunks.join("\n\n---\n\n");
+}
+
+const SHARED_DESKTOP_COPILOT_POLICY = loadSharedDesktopCopilotPolicy();
+
 const app = express();
 const port = Number(process.env.PORT || 5173);
 const mcpBaseUrl = process.env.MCP_HTTP_BASE_URL || "http://mcp-server:7001";
+const hitlA2aBase = (process.env.HITL_A2A_BASE_URL || "http://trade-blotter-hitl-agent:8100").replace(/\/$/, "");
+const hitlAdkWebPublicUrl = process.env.HITL_ADK_WEB_PUBLIC_URL || "http://localhost:8200";
+const hitlFailClosed = process.env.HITL_FAIL_CLOSED !== "false";
+
+/** Mirrors `trade-blotter-hitl-agent/assets/tool_classification.yaml` (fnmatch-style * only). */
+const READ_ONLY_TOOL_GLOBS = [
+  "check_*",
+  "list_*",
+  "get_*",
+  "search_*",
+  "read_*",
+  "describe_*",
+  "fetch_*",
+  "show_*",
+  "find_*",
+  "lookup_*",
+  "query_*",
+  "blotter_*",
+  "*_summary",
+  "*_balance",
+  "*_quote",
+  "health",
+  "ping"
+];
+const MUTATING_TOOL_GLOBS = [
+  "place_*",
+  "submit_*",
+  "cancel_*",
+  "amend_*",
+  "modify_*",
+  "delete_*",
+  "create_*",
+  "update_*",
+  "set_*",
+  "execute_*",
+  "approve_*",
+  "reject_*",
+  "transfer_*",
+  "trade_*"
+];
+
+function globToRegex(pattern) {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^${escaped.replace(/\*/g, ".*")}$`);
+}
+
+function classifyToolName(name) {
+  for (const g of READ_ONLY_TOOL_GLOBS) {
+    if (globToRegex(g).test(name)) return "read_only";
+  }
+  for (const g of MUTATING_TOOL_GLOBS) {
+    if (globToRegex(g).test(name)) return "mutating";
+  }
+  return hitlFailClosed ? "mutating" : "read_only";
+}
+
+const pendingGeminiApprovals = new Map();
+const APPROVAL_TTL_MS = 30 * 60 * 1000;
+
+function pruneStaleApprovals() {
+  const now = Date.now();
+  for (const [id, entry] of pendingGeminiApprovals) {
+    if (now - entry.createdAt > APPROVAL_TTL_MS) {
+      pendingGeminiApprovals.delete(id);
+    }
+  }
+}
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const geminiModel = process.env.GEMINI_INFERENCE_MODEL || "gemini-3.1-pro-preview";
 const geminiTemperature = Number.parseFloat(process.env.GEMINI_TEMPERATURE ?? "1.0");
@@ -128,7 +226,11 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
         .join("\n")
     : "";
   const preparedPrompt = formatPromptMessages(promptMessages);
-  return [
+  const lines = [];
+  if (SHARED_DESKTOP_COPILOT_POLICY) {
+    lines.push(SHARED_DESKTOP_COPILOT_POLICY, "");
+  }
+  lines.push(
     "You are an assistant for the trade blotter. You may respond in one of two ways:",
     "",
     "1) TO CALL A TOOL (or signal no tool): Respond with ONLY valid JSON, no other text:",
@@ -154,7 +256,8 @@ function buildGeminiPrompt(toolsPayload, userMessage, context, summary, promptMe
     JSON.stringify(toolsPayload),
     "",
     `User message: ${userMessage}`
-  ].join("\n");
+  );
+  return lines.join("\n");
 }
 
 function buildFollowUpPrompt(previousSteps) {
@@ -236,6 +339,212 @@ async function callGemini(prompt, { model = geminiModel, temperature = geminiTem
   LOG.model("response", `model=${model} outputLen=${combinedText.length} preview=${truncate(combinedText, 120)}`);
   return combinedText;
 }
+
+async function proxyHitl(path, { method = "GET", body = undefined } = {}) {
+  const url = `${hitlA2aBase}${path.startsWith("/") ? path : `/${path}`}`;
+  const init = { method, headers: { Accept: "application/json" } };
+  if (body !== undefined && method !== "GET" && method !== "HEAD") {
+    init.headers["Content-Type"] = "application/json";
+    init.body = JSON.stringify(body);
+  }
+  LOG.api(method, `[hitl]${path}`, "(request)");
+  const response = await fetch(url, init);
+  const text = await response.text();
+  let payload = text;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    payload = text;
+  }
+  if (!response.ok) {
+    const msg = typeof payload === "string" ? payload : JSON.stringify(payload);
+    throw new Error(msg);
+  }
+  return payload;
+}
+
+async function runGeminiToolOrchestration(reqBody) {
+  const message = typeof reqBody?.message === "string" ? reqBody.message : "";
+  const context = Array.isArray(reqBody?.context) ? reqBody.context : [];
+  const summary = typeof reqBody?.summary === "string" ? reqBody.summary : "";
+  const resumeApprovalId = reqBody?.resumeApprovalId;
+  const rejectApprovalId = reqBody?.rejectApprovalId;
+
+  pruneStaleApprovals();
+
+  if (rejectApprovalId) {
+    if (pendingGeminiApprovals.has(rejectApprovalId)) {
+      pendingGeminiApprovals.delete(rejectApprovalId);
+    }
+    return {
+      message:
+        "The proposed mutating operation was cancelled. Say if you want to try a different approach.",
+      rejected: true
+    };
+  }
+
+  let steps = [];
+  let loopIterationStart = 0;
+  let carryMessage = message.trim();
+  let carryContext = context;
+  let carrySummary = summary;
+  let promptMessages = [];
+  let toolsPayload;
+
+  if (resumeApprovalId) {
+    const pending = pendingGeminiApprovals.get(resumeApprovalId);
+    if (!pending) {
+      throw new Error("Approval session expired or unknown. Send a new request.");
+    }
+    const { tool, arguments: args, resume } = pending;
+    pendingGeminiApprovals.delete(resumeApprovalId);
+    LOG.prompt("hitl approve run", `tool=${tool}`);
+    const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(tool)}`, {
+      arguments: args
+    });
+    steps = [...resume.steps, { name: tool, arguments: args, result: toolResult }];
+    loopIterationStart = resume.loopIteration + 1;
+    carryMessage = resume.message;
+    carryContext = resume.context;
+    carrySummary = resume.summary;
+    promptMessages = resume.promptMessages;
+    toolsPayload = resume.toolsPayload;
+  } else {
+    if (!carryMessage) {
+      throw new Error("Missing message in request body.");
+    }
+    toolsPayload = await proxyRequest("GET", "/tools");
+    try {
+      const promptPayload = await proxyRequest("POST", "/prompt/analyze_trade_query", {
+        arguments: { user_question: carryMessage }
+      });
+      promptMessages = Array.isArray(promptPayload?.messages) ? promptPayload.messages : [];
+      LOG.prompt(
+        "analyze_trade_query",
+        `user_question=${truncate(carryMessage, 80)} messages=${promptMessages.length}`
+      );
+    } catch (error) {
+      LOG.prompt("analyze_trade_query failed", `error=${error?.message || error}`);
+      console.warn("Failed to load MCP prompt context:", error?.message || error);
+    }
+  }
+
+  const toolsList = Array.isArray(toolsPayload)
+    ? toolsPayload
+    : Array.isArray(toolsPayload?.tools)
+      ? toolsPayload.tools
+      : [];
+  const toolNames = new Set(toolsList.map((tool) => tool.name));
+  const maxSteps = Number.isFinite(geminiMaxToolSteps) && geminiMaxToolSteps > 0 ? geminiMaxToolSteps : 5;
+
+  let lastMessage = "";
+  let lastModelText = "";
+
+  for (let stepIndex = loopIterationStart; stepIndex < maxSteps; stepIndex++) {
+    const basePrompt = buildGeminiPrompt(toolsPayload, carryMessage, carryContext, carrySummary, promptMessages);
+    const followUp = buildFollowUpPrompt(steps);
+    const prompt = basePrompt + followUp;
+
+    const modelText = await callGemini(prompt, {
+      maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192,
+      thinkingLevel: "high"
+    });
+    lastModelText = modelText;
+    const modelJson = extractJsonFromText(modelText);
+    const isToolJson = modelJson && typeof modelJson === "object" && "tool" in modelJson;
+
+    if (!isToolJson) {
+      const directAnswer = typeof modelText === "string" ? modelText.trim() : String(modelText);
+      LOG.prompt("gemini result", `directAnswer preview=${truncate(directAnswer, 100)}`);
+      return {
+        message: directAnswer,
+        directAnswer: true,
+        modelText: lastModelText,
+        toolCalls: steps.length ? steps : undefined
+      };
+    }
+
+    lastMessage = modelJson.message || "";
+
+    if (!modelJson.tool) {
+      const lastStep = steps[steps.length - 1];
+      LOG.prompt("gemini result", `toolCalls=${steps.length} message=${truncate(lastMessage, 80)}`);
+      return {
+        message: lastMessage || "No further tool selected.",
+        toolCalls: steps.length ? steps : undefined,
+        toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
+        toolResult: lastStep?.result,
+        modelText: lastModelText,
+        multiStep: steps.length > 1
+      };
+    }
+
+    if (!toolNames.has(modelJson.tool)) {
+      throw new Error(`Unknown tool selected: ${modelJson.tool}`);
+    }
+
+    const toolArgs = modelJson.arguments || {};
+    LOG.prompt(
+      "gemini tool step",
+      `step=${stepIndex + 1} tool=${modelJson.tool} args=${truncate(JSON.stringify(toolArgs), 100)}`
+    );
+
+    const kind = classifyToolName(modelJson.tool);
+    if (kind === "mutating") {
+      const approvalId = randomUUID();
+      pendingGeminiApprovals.set(approvalId, {
+        createdAt: Date.now(),
+        tool: modelJson.tool,
+        arguments: toolArgs,
+        resume: {
+          message: carryMessage,
+          context: carryContext,
+          summary: carrySummary,
+          promptMessages,
+          steps: [...steps],
+          toolsPayload,
+          loopIteration: stepIndex
+        }
+      });
+      LOG.api("POST", "/api/llm/gemini", 200, `needsApproval tool=${modelJson.tool}`);
+      return {
+        needsApproval: true,
+        approvalId,
+        tool: modelJson.tool,
+        arguments: toolArgs,
+        message:
+          lastMessage ||
+          `Human approval is required before running mutating tool «${modelJson.tool}».`,
+        partialSteps: steps.length ? steps : undefined,
+        modelText: lastModelText
+      };
+    }
+
+    const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
+      arguments: toolArgs
+    });
+    steps.push({ name: modelJson.tool, arguments: toolArgs, result: toolResult });
+  }
+
+  const lastStep = steps[steps.length - 1];
+  LOG.prompt("gemini result", `multiStep message=${truncate(lastMessage, 80)}`);
+  return {
+    message: lastMessage || "Max steps reached.",
+    toolCalls: steps,
+    toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
+    toolResult: lastStep?.result,
+    modelText: lastModelText,
+    multiStep: true
+  };
+}
+
+app.get("/api/config", (_req, res) => {
+  res.json({
+    hitlAdkWebUrl: hitlAdkWebPublicUrl,
+    hitlA2aConfigured: Boolean(hitlA2aBase),
+    toolPolicy: { failClosed: hitlFailClosed }
+  });
+});
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -336,110 +645,83 @@ app.post("/api/llm/gemini", async (req, res) => {
       res.status(400).json({ error: "Gemini API key not configured. Set GEMINI_API_KEY." });
       return;
     }
+    const hasResume = Boolean(req.body?.resumeApprovalId);
+    const hasReject = Boolean(req.body?.rejectApprovalId);
     const message = req.body?.message?.trim();
-    if (!message) {
+    if (!message && !hasResume && !hasReject) {
       LOG.api("POST", "/api/llm/gemini", 400, "missing message");
-      res.status(400).json({ error: "Missing message in request body." });
+      res.status(400).json({ error: "Missing message or approval action in request body." });
       return;
     }
-    const context = Array.isArray(req.body?.context) ? req.body.context : [];
-    const summary = typeof req.body?.summary === "string" ? req.body.summary : "";
-
-    const toolsPayload = await proxyRequest("GET", "/tools");
-    const toolsList = Array.isArray(toolsPayload)
-      ? toolsPayload
-      : Array.isArray(toolsPayload?.tools)
-        ? toolsPayload.tools
-        : [];
-    const toolNames = new Set(toolsList.map((tool) => tool.name));
-
-    let promptMessages = [];
-    try {
-      const promptPayload = await proxyRequest("POST", "/prompt/analyze_trade_query", {
-        arguments: { user_question: message }
-      });
-      promptMessages = Array.isArray(promptPayload?.messages) ? promptPayload.messages : [];
-      LOG.prompt("analyze_trade_query", `user_question=${truncate(message, 80)} messages=${promptMessages.length}`);
-    } catch (error) {
-      LOG.prompt("analyze_trade_query failed", `error=${error?.message || error}`);
-      console.warn("Failed to load MCP prompt context:", error?.message || error);
-    }
-
-    const maxSteps = Number.isFinite(geminiMaxToolSteps) && geminiMaxToolSteps > 0 ? geminiMaxToolSteps : 5;
-    const steps = [];
-    let lastMessage = "";
-    let lastModelText = "";
-
-    for (let stepIndex = 0; stepIndex < maxSteps; stepIndex++) {
-      const basePrompt = buildGeminiPrompt(toolsPayload, message, context, summary, promptMessages);
-      const followUp = buildFollowUpPrompt(steps);
-      const prompt = basePrompt + followUp;
-
-      const modelText = await callGemini(prompt, {
-        maxOutputTokens: Number.isFinite(geminiMaxOutputTokens) ? geminiMaxOutputTokens : 8192,
-        thinkingLevel: "high"
-      });
-      lastModelText = modelText;
-      const modelJson = extractJsonFromText(modelText);
-      const isToolJson = modelJson && typeof modelJson === "object" && "tool" in modelJson;
-
-      if (!isToolJson) {
-        const directAnswer = typeof modelText === "string" ? modelText.trim() : String(modelText);
-        LOG.api("POST", "/api/llm/gemini", 200, "directAnswer");
-        LOG.prompt("gemini result", `directAnswer preview=${truncate(directAnswer, 100)}`);
-        res.json({
-          message: directAnswer,
-          directAnswer: true,
-          modelText: lastModelText
-        });
-        return;
-      }
-
-      lastMessage = modelJson.message || "";
-
-      if (!modelJson.tool) {
-        const lastStep = steps[steps.length - 1];
-        LOG.api("POST", "/api/llm/gemini", 200, `toolCalls=${steps.length} lastTool=${lastStep?.name}`);
-        LOG.prompt("gemini result", `toolCalls=${steps.length} message=${truncate(lastMessage, 80)}`);
-        res.json({
-          message: lastMessage || "No further tool selected.",
-          toolCalls: steps.length ? steps : undefined,
-          toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
-          toolResult: lastStep?.result,
-          modelText: lastModelText,
-          multiStep: steps.length > 1
-        });
-        return;
-      }
-
-      if (!toolNames.has(modelJson.tool)) {
-        LOG.api("POST", "/api/llm/gemini", 400, `unknown tool=${modelJson.tool}`);
-        res.status(400).json({ error: `Unknown tool selected: ${modelJson.tool}` });
-        return;
-      }
-
-      const toolArgs = modelJson.arguments || {};
-      LOG.prompt("gemini tool step", `step=${stepIndex + 1} tool=${modelJson.tool} args=${truncate(JSON.stringify(toolArgs), 100)}`);
-      const toolResult = await proxyRequest("POST", `/tool/${encodeURIComponent(modelJson.tool)}`, {
-        arguments: toolArgs
-      });
-
-      steps.push({ name: modelJson.tool, arguments: toolArgs, result: toolResult });
-    }
-
-    const lastStep = steps[steps.length - 1];
-    LOG.api("POST", "/api/llm/gemini", 200, `maxSteps toolCalls=${steps.length} lastTool=${lastStep?.name}`);
-    LOG.prompt("gemini result", `multiStep message=${truncate(lastMessage, 80)}`);
-    res.json({
-      message: lastMessage || "Max steps reached.",
-      toolCalls: steps,
-      toolCall: lastStep ? { name: lastStep.name, arguments: lastStep.arguments } : undefined,
-      toolResult: lastStep?.result,
-      modelText: lastModelText,
-      multiStep: true
-    });
+    const payload = await runGeminiToolOrchestration(req.body);
+    LOG.api("POST", "/api/llm/gemini", 200, payload.needsApproval ? "needsApproval" : "ok");
+    res.json(payload);
   } catch (error) {
-    LOG.api("POST", "/api/llm/gemini", 502, `error=${error.message}`);
+    const status = /Unknown tool/.test(error.message) ? 400 : 502;
+    LOG.api("POST", "/api/llm/gemini", status, `error=${error.message}`);
+    res.status(status).json({ error: error.message });
+  }
+});
+
+app.post("/api/hitl/plan", async (req, res) => {
+  try {
+    const goal = req.body?.goal?.trim();
+    if (!goal) {
+      res.status(400).json({ error: "Missing goal." });
+      return;
+    }
+    const data = await proxyHitl("/v1/a2a/plan", {
+      method: "POST",
+      body: {
+        goal,
+        context: req.body?.context,
+        tool_names: req.body?.tool_names
+      }
+    });
+    LOG.api("POST", "/api/hitl/plan", 200);
+    res.json(data);
+  } catch (error) {
+    LOG.api("POST", "/api/hitl/plan", 502, `error=${error.message}`);
+    res.status(502).json({ error: error.message });
+  }
+});
+
+app.post("/api/hitl/classify", async (req, res) => {
+  try {
+    const names = req.body?.names;
+    if (!Array.isArray(names) || !names.length) {
+      res.status(400).json({ error: "Missing names array." });
+      return;
+    }
+    const data = await proxyHitl("/v1/a2a/classify", { method: "POST", body: { names } });
+    res.json(data);
+  } catch (error) {
+    res.status(502).json({ error: error.message });
+  }
+});
+
+app.post("/api/hitl/validate_step", async (req, res) => {
+  try {
+    const data = await proxyHitl("/v1/a2a/validate_step", {
+      method: "POST",
+      body: {
+        tool: req.body?.tool,
+        arguments: req.body?.arguments || {},
+        rationale: req.body?.rationale,
+        prior_steps: req.body?.prior_steps
+      }
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(502).json({ error: error.message });
+  }
+});
+
+app.get("/api/hitl/skills", async (_req, res) => {
+  try {
+    const data = await proxyHitl("/v1/a2a/skills", { method: "GET" });
+    res.json(data);
+  } catch (error) {
     res.status(502).json({ error: error.message });
   }
 });

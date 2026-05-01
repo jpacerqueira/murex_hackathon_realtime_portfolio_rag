@@ -41,7 +41,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH=/opt/venv/bin:$PATH \
     ADK_HOST=0.0.0.0 \
-    ADK_PORT=8000
+    ADK_PORT=8000 \
+    A2A_PORT=8100
 
 # curl is used by the entrypoint's wait-for-bridge probe; tini supervises adk
 # so signals are forwarded properly.
@@ -60,10 +61,11 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER agent
 
-EXPOSE 8000
+EXPOSE 8000 8100
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
-  CMD curl -fsS "http://127.0.0.1:${ADK_PORT}/list-apps" >/dev/null || exit 1
+  CMD curl -fsS "http://127.0.0.1:${ADK_PORT}/list-apps" >/dev/null \
+    && curl -fsS "http://127.0.0.1:${A2A_PORT:-8100}/health" >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["adk", "web", "--host", "0.0.0.0", "--port", "8000"]
